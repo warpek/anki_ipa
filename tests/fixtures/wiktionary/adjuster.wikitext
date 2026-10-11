@@ -1,0 +1,27 @@
+==English==
+
+===Alternative forms===
+* {{l|en|adjustor}}
+
+===Etymology===
+{{ety|en|:af|adjust|-er<id:agent noun>|text=+|tree=1}}
+
+===Noun===
+{{en-noun}}
+
+# One who [[adjust]]s something, especially the amount of compensation due in an insurance claim.
+# A component used to adjust something.
+#: {{co|en|a bar '''adjuster''' in kiteboarding}}
+
+====Derived terms====
+{{col|en|barrel adjuster|attitude-adjuster|adjustress|claim adjuster|claims adjuster|loss adjuster}}
+
+====Translations====
+{{trans-top|one who adjusts}}
+* Indonesian: {{t|id|penyetel}}
+* Malay: {{t|ms|pelaras}}
+* Portuguese: {{t|pt|ajustador|m}}
+{{trans-bottom}}
+
+===Anagrams===
+* {{anagrams|en|a=adejrstu|adjurest|readjust}}

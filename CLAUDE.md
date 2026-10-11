@@ -1,0 +1,281 @@
+# anki_ipa — Anki add-on that fills missing IPA
+
+Fills the empty `IPA-english` field on notes in the user's **English words** deck.
+Free online sources come first, with an optional Claude fallback. The main entry point is a batch action in the Browser.
+
+> **Keep this file current.** After each phase: tick the checklist, record decisions or deviations in
+> *Decision log*, and fix any facts below that turned out wrong.
+
+## Environment (verified 2026-10-11)
+- **Anki 26.08.1** (Arch `anki` package), running on **system `/usr/bin/python3` (3.14.7)**.
+  - Its modules live in `/usr/lib/python3.14/site-packages/{anki,aqt,_aqt}`.
+  - Generated GUI hooks: `_aqt/hooks.py`. Backend hooks: `anki/hooks_gen.py`.
+  - The `python3` on PATH comes from mise and **cannot import aqt**. Always use `/usr/bin/python3` or `.venv`.
+- Profile `User 1`. The collection is `~/.local/share/Anki2/User 1/collection.anki2` (schema 18).
+- Add-ons dir: `~/.local/share/Anki2/addons21/`.
+- **Never write to the live collection from scripts.**
+  - For read-only inspection, use `sqlite3 'file:...?mode=ro&immutable=1'`.
+  - Indexes use Anki's custom `unicase` collation. In Python, register it with `create_collation("unicase", ...)`, or join queries will fail.
+
+## Target data
+- Note type **`English words`** (id 1347275924928), used only in deck **`English words`**. It has 8,183 notes.
+- Fields (by order):
+  - 0 `English`: the headword
+  - 1 `Polish`
+  - 2 `Not-english`
+  - 3 `Not-polish`
+  - 4 `English-sound`
+  - 5 `IPA-english`
+- `IPA-english` is filled on 7,239 notes and empty on 944.
+- The empty ones break down as:
+  - single words: 485
+  - 2–3-word phrases: 162
+  - longer phrases: 297, of which about 201 are full sentences
+- **The template renders `/{{IPA-english}}/`, so store bare IPA without slashes.**
+- **Existing style to match:**
+  - British vowels (`əʊ`, not `oʊ`), with `ˈ ˌ ː` and `r` (not `ɹ`).
+  - Phrases and sentences are transcribed in full, keeping final punctuation.
+  - Alternatives are separated by `, `. Unknown words are written as `[word]`.
+- **Headword junk to clean before lookup:**
+  - `&nbsp;`, `<div>`, `<br>`
+  - stray whitespace, curly quotes and `…`
+  - parentheticals like `(verb)`, `(formal)`, `(your)`
+- **Out of scope unless asked:** legacy quirks in already-filled IPA (dotless `ı`, `ʋ`, ASCII `'`/`:`, 57 junk `/word/` values).
+
+## Decisions
+- **Sources:**
+  1. FreeDictionaryAPI.com (`freedictionaryapi.com/api/v1/entries/en/<w>`): no key, tags RP/GA, about 1,000 requests per hour per IP.
+  2. Wiktionary `action=raw` wikitext, parsing `{{IPA|en|...}}` together with the accent labels. Send a descriptive User-Agent and make requests one at a time.
+  3. Claude API: **opt-in**, uses the user's own key, model `claude-haiku-5-5`. Results are tagged `ipa::llm`.
+  - **Rejected:** dictionaryapi.dev (unmaintained since 2023, returned 522), Oxford (paid), Merriam-Webster (not IPA), Cambridge (ToS), espeak/gruut/g2p_en (native or heavy deps), CMUdict-only (US only).
+- **Accent:** UK first, US as fallback. Keep at most 2 distinct variants, joined with `, `.
+- **Phrases:** look up the whole phrase first. If that misses, go word by word and write unresolved words as `[word]`. When Claude is enabled, it gets the whole text for anything still missing or partial.
+- **Apply mode:** write directly as **one undoable step** (`add_custom_undo_entry` + `merge_undo_entries`), then show a summary. Filled notes are tagged `ipa::auto` (and `ipa::llm` when Claude produced them).
+- **Main UI:** Browser ▸ Notes ▸ *Fill missing IPA*, also in the context menu. It works on the selected notes, or on every matching note when nothing is selected.
+  - Fill-on-add hooks only work with the legacy editor. The experimental Svelte editor bypasses `editor_did_unfocus_field`, `add_cards_did_add_note` and `note_will_be_added`.
+
+## Architecture
+```
+CLAUDE.md README.md LICENSE (MIT)
+src/anki_ipa/                 <- symlinked to ~/.local/share/Anki2/addons21/anki_ipa
+  __init__.py                 hook registration only; no mw.col access at import time
+  manifest.json config.json config.md
+  ui.py                       Browser actions; QueryOp (read) -> QueryOp.without_collection (network) -> CollectionOp (write+undo)
+  editor_button.py            editor "IPA" button (legacy Editor + Svelte NewEditor); reuses batch/ops helpers
+  ops.py                      collect_words / apply_plan / read_note / fill_note: take a Collection, import anki but never aqt
+  core/                       pure Python, NO aqt imports (unit-testable)
+    clean.py                  headword cleaning
+    normalize.py              ɹ->r, ɡ->g, syllable dots, slashes; British style rules (vowels, (r), diacritics, monosyllable stress)
+    compose.py                tokenizer; per-word IPA -> phrase with [word] placeholders; FUNCTION_WORDS weak/strong table
+    resolver.py               cache -> sources chain; whole phrase -> word-by-word -> [word]; accent pick
+    batch.py                  build_search, candidate filter, write plan {nid: (ipa, tags)}, summary text
+    cache.py                  JSON cache in user_files/ (survives upgrades); negative results with TTL
+    http.py                   urllib only; User-Agent, timeouts, 429/503/529 backoff honouring Retry-After
+    sources/{base,freedictionary,wiktionary,claude}.py
+  user_files/README.txt
+tests/                        pytest; recorded fixtures; temp-Collection integration test
+scripts/package.sh            builds anki_ipa.ankiaddon
+```
+
+**Config keys:**
+- `note_type`, `word_field`, `ipa_field`
+- `accent_preference` (default `["uk","us"]`)
+- `sources`
+- `claude` {`enabled` (default `false`), `api_key` (`""` → env `ANTHROPIC_API_KEY`), `model` (`claude-haiku-5-5`), `for_partial` (default `true`)}
+- `word_by_word`
+- `normalize_map`, `strip_syllable_dots`
+- `british_vowels`, `strip_optional_sounds`, `strip_diacritics`, `strip_monosyllable_stress`, `weak_forms` (all default `true`)
+- `tag_auto`, `tag_llm`, `tag_partial` (default `ipa::partial`)
+- `overwrite_existing`
+
+## Anki API cheat-sheet (verified in 26.08.1 sources)
+- **Config:** `mw.addonManager.getConfig(__name__)`. Always use `__name__` and relative imports, because the folder becomes a numeric ID on AnkiWeb. `getConfig` itself does `module.split(".")[0]`, so a submodule `__name__` works too; `ui.register(__name__)` stores the package name anyway.
+- **Version:** `anki.buildinfo.version` (or `aqt.appVersion`); there is no `anki.version`.
+- **Typing:** import `Browser` from `aqt.browser.browser` (mypy strict rejects `from aqt.browser import Browser`: not explicitly exported). `aqt.mw` is `AnkiQt | None`, so assert it before use.
+- **Search for notes to fill:** `"note:English words" "IPA-english:" "English:_*"`. An empty value after `field:` matches an empty field; `_*` matches a non-empty one.
+- **Hooks:**
+  - `gui_hooks.browser_menus_did_init(browser)` → add the action to `browser.form.menu_Notes`
+  - `gui_hooks.browser_will_show_context_menu(browser, menu)`
+  - `browser.selected_notes()`
+- **Note access:** `col.find_notes(q)`, `col.get_note(nid)`, `col.update_notes(notes)`.
+- **Undo:** `pos = col.add_custom_undo_entry("Fill IPA")` … `return col.merge_undo_entries(pos)` inside a `CollectionOp`.
+- **Background work:**
+  - `QueryOp(parent=, op=, success=).failure(..).with_progress(..).without_collection().run_in_background()`
+  - Don't touch Qt or `mw.col` from the background thread.
+  - Report progress with `mw.taskman.run_on_main(lambda: mw.progress.update(label=, value=, max=))`; check `mw.progress.want_cancel()` to stop.
+- **Already available in Anki's environment:** `requests` and `bs4`. Prefer stdlib `urllib`. Vendor pure-Python packages only, into `vendor/`.
+
+## Commands
+```sh
+# dev venv (sees system aqt/anki 26.08.1)
+/usr/bin/python3 -m venv --system-site-packages .venv && .venv/bin/pip install pytest mypy
+.venv/bin/pytest                    # unit + integration (offline, fixtures)
+.venv/bin/pytest -m network         # opt-in live smoke tests against real sources
+ln -s "$PWD/src/anki_ipa" ~/.local/share/Anki2/addons21/anki_ipa   # dev install, restart Anki
+# e2e on a COPY (works while the real Anki is open; disable sync in the copy first, see Decision log)
+ANKI_SINGLE_INSTANCE_KEY=anki_ipa_test anki -b /path/to/copy-of-Anki2
+# add QT_QPA_PLATFORM=offscreen + a probe add-on in the copy's addons21 for a headless check
+scripts/package.sh                  # -> anki_ipa.ankiaddon
+```
+
+## Workflow
+- **Each phase runs in its own fresh subagent** to save context, one phase at a time, in order. The main session only orchestrates: it spawns the agent for a phase, reviews its report, and starts the next one.
+- A phase agent reads this file first. When it finishes, it ticks its checkbox, adds an entry to the *Decision log* (deviations, gotchas, anything the next phase needs to know), and fixes any facts above that turned out wrong.
+- No git commits unless the user asks.
+
+## Implementation phases
+- [x] **Phase 0, scaffold:**
+  - `git init`, `.gitignore`, the layout above, manifest/config/config.md.
+  - Create `.venv`, add the symlink into addons21.
+  - A stub Browser menu action that shows a tooltip.
+  - Verify it loads in Anki.
+- [x] **Phase 1, core text:** `clean.py`, `normalize.py`, tokenizer/composer, with unit tests that use real headword shapes (`rank&nbsp;`, `to give a run for (your) money`, `<div>` wrapped values, sentences with `.!?`).
+- [x] **Phase 2, free sources:**
+  - `http.py`, `cache.py`, `sources/freedictionary.py`, `sources/wiktionary.py`, `resolver.py`.
+  - Tests use fixtures recorded for: record, read, ice cream, cease and desist, scope, an unknown word (qwzxv), plus Wiktionary insurmountable/adjuster.
+- [x] **Phase 2b, British style normalisation:**
+  - Vowel rules, `(r)`/diacritic stripping, no stress on monosyllables, weak forms of function words in phrases. Each one toggleable in config.
+- [x] **Phase 3, Anki integration:**
+  - `ui.py` batch flow with progress and cancel, single-step undo, tags, and a summary (filled per source, partial, missed list).
+  - Integration test against a temp `Collection` with the same note type.
+- [x] **Phase 4, Claude fallback:**
+  - `sources/claude.py`; load the `claude-api` skill before writing it.
+  - The prompt carries a few-shot sample of the existing style and asks for bare UK IPA only.
+  - Opt-in through config; results tagged `ipa::llm`.
+- [x] **Phase 5, polish:**
+  - Optional editor button that handles both the legacy `Editor` and the Svelte `NewEditor` (`isinstance(editor, Editor)`).
+  - `config.md` docs, CC BY-SA attribution (Wiktionary / FreeDictionaryAPI.com), `scripts/package.sh`.
+
+## Verification protocol
+1. `.venv/bin/pytest` is green. Undo in the integration test restores the empty fields.
+2. Run `pytest -m network` against the live sources.
+3. **E2E on a copy:**
+   - Copy `~/.local/share/Anki2` to a scratch dir and symlink the add-on into the copy's `addons21`.
+   - Run `anki -b <copy>` and use Fill missing IPA on about 20 selected notes.
+   - Inspect the results and tags, check Edit ▸ Undo, then run on all 944.
+4. Use it on the real profile only after that, and make a manual backup first.
+
+## Decision log
+- 2026-10-11: Plan approved. Sources: FreeDictionaryAPI.com → Wiktionary → opt-in Claude. Accent UK→US. Phrases: whole phrase, then word by word with `[word]`. Writes go straight to notes as one undoable step, with tags.
+- 2026-10-11 (Phase 0 done):
+  - **Import guard:** `__init__.py` registers hooks only if `sys.modules.get("aqt")` exists and its `mw` is not None. It never imports aqt itself, so `import anki_ipa.core` in tests does not load Qt (a test asserts this). `ui.py` imports aqt at module top and exposes `register(addon)`.
+  - **Venv:** `/usr/bin/python3 -m venv --system-site-packages .venv && .venv/bin/pip install pytest mypy` worked as-is (pytest 9.1.1, mypy 2.4.0). Importing aqt prints a harmless "truststore is not installed" warning.
+  - **pyproject.toml** holds pytest config (`network` marker, `addopts = -m 'not network'`; `pytest -m network` overrides it) and mypy config (`strict`, `mypy_path = src`). `.venv/bin/mypy src/anki_ipa tests` is clean under strict; aqt/anki ship `py.typed`, no ignores needed.
+  - **Search:** `ui.build_search(config)` builds `"note:English words" "English:_*" "IPA-english:"` (drops the empty-field term when `overwrite_existing`). Verified: 944 matches on a collection copy. Phase 3 should reuse it.
+  - **Symlink** `~/.local/share/Anki2/addons21/anki_ipa -> src/anki_ipa` created (addons21 was empty).
+  - **E2E load check works while the real Anki runs:** Anki's single-instance key comes from env `ANKI_SINGLE_INSTANCE_KEY`, so setting it lets a second instance start. The real profile has `autoSync`/`syncKey` set, so in the copy edit `prefs21.db` (pickled dicts in table `profiles`; set `syncKey=None`, `autoSync=False`, `syncMedia=False`) before launching. Done headless with `QT_QPA_PLATFORM=offscreen` and a throwaway probe add-on (`addons21/zz_probe`, on `profile_did_open` opens the Browser, triggers the action, writes results to a file, then `mw.close()`). Result: both hooks registered, "Fill missing IPA" in Notes menu, tooltips "944 note(s) match ..." (no selection) and "1 selected note(s)". The copy lives in the session scratchpad (`.../scratchpad/anki-copy`); recreate it for later phases.
+- 2026-10-11 (Phase 1 done): `core/clean.py`, `core/normalize.py`, `core/compose.py` (stdlib only), tests in `tests/test_core_text.py` (53 tests pass in total; mypy strict clean).
+  - **`clean.py`:** `clean_headword(raw: str) -> Headword` and `strip_markup(raw: str) -> str` (HTML/unicode clean-up only).
+    - `Headword(raw, text, alternatives: tuple[str, ...], trailing_punct="", annotations=(), optional=(), full_text="")`, frozen. Properties: `is_empty`, `is_sentence` (= has `trailing_punct`), `has_alternatives`, `is_phrase` (more than one word and not alternatives).
+    - `text` is the lookup string, with parentheticals and trailing punctuation removed. **Resolver: always iterate `alternatives`.** It is `(text,)` normally, one entry per alternative, or `()` when empty. Resolve each one, then join with `compose.join_alternatives`.
+    - Pipeline: repeated `html.unescape` (so `&amp;nbsp;` works) → drop `[sound:…]` → block tags (`div`, `br`, `p`, `li`…) become a space, inline tags (`b`, `i`, `span`…) are removed with no space → NBSP and other odd spaces become a space, curly quotes become straight, `…` becomes `...` → collapse whitespace.
+    - **Parentheticals:** always dropped from `text`. A trailing one (followed only by other parentheticals or punctuation) is a label and goes into `annotations` (`(verb)`, `(formal)`). A leading or inner one is an optional word and goes into `optional`. `full_text` keeps optional words without their parens (`to give a run for your money`) in case Phase 2 or the user prefers it. If the value is *only* a parenthetical, its contents are used.
+    - **Sentence punctuation:** a trailing run of `[.!?]+` (also `...` from `…`, and `?!`) goes to `trailing_punct` and is removed from `text`, but only when it is not the whole string. Trailing `, ; :` junk is dropped. Known quirk: abbreviations like `etc.` also count as sentences (their IPA gets a final `.`).
+    - **Alternatives vs phrase commas:** split on `,` only if the value has no trailing sentence punctuation and every part is a single whitespace-free word. `adjustor, adjuster` gives 2 alternatives (de-duplicated). `show, don't tell` and `Yes, sir.` stay one phrase. `/` is never treated as an alternative separator (`and/or`).
+  - **`normalize.py`:**
+    - `NormalizeConfig(char_map: Mapping[str,str] = {"ɹ":"r","ɡ":"g"}, strip_syllable_dots=True)` with `.from_config(config_dict)` reading `normalize_map` and `strip_syllable_dots`. Module constant `DEFAULT`.
+    - `normalize_ipa(ipa, config=DEFAULT) -> str`: strip delimiters → char map → remove tie bars (U+0361/U+035C) → remove syllable dots (a `.` with a non-space, non-dot character on both sides, so a final `.` survives) → collapse spaces. Vowels are not mapped (`/ˈɹɛk.ɔːd/` → `ˈrɛkɔːd`). `l̩` and ligatures (`ʧ`) are left alone.
+    - `strip_delimiters(ipa)` removes one `/…/` or `[…]` pair only when it encloses the whole string with no inner `/`, `[` or `]`.
+    - **Apply `normalize_ipa` to each raw source result BEFORE composing and before re-appending punctuation. Never run it on composed output**, because a lone `[word]` placeholder would lose its brackets.
+    - `is_fragment(ipa) -> bool`: true for empty values, a leading or trailing dash (`/ɹə-/`, `-ɪŋ`), or a leading `...`. Skip such source results.
+  - **`compose.py`:** `Lookup = Callable[[str], str | None]`.
+    - `tokenize(text) -> list[Token(text, is_word)]`. Words keep internal `'`/`-` (`don't`, `well-known`). Punctuation is a separate token. `words(text) -> list[str]`.
+    - `compose(text, lookup, trailing_punct="") -> Composed(ipa, missing: tuple[str, ...])`, with property `complete` (= no missing). Each distinct token is looked up once, **with its case preserved** (`He`, not `he`), so the resolver's lookup should try a lowercase fallback itself. A miss becomes `[token]`. `, ; : ! ? . ...` inside the phrase are glued to the previous IPA. Quotes, brackets and dashes are dropped. Parts are joined with single spaces, and `trailing_punct` is appended. Empty text gives `ipa=""` with `complete=True`, so check `Headword.is_empty` first.
+    - Helpers: `placeholder(word) -> "[word]"`, `with_punct(ipa, punct)` (no-op on empty IPA), and `join_alternatives(ipas) -> "a, b"` (drops empty and duplicate values).
+  - **Suggested Phase 2 flow per alternative:** whole-text lookup (normalized, not a fragment) → `with_punct(ipa, hw.trailing_punct)`. Otherwise, when `word_by_word` is on, `compose(alt, word_lookup, hw.trailing_punct)`, where `word_lookup` returns normalized IPA. Partial results (`not complete`) are candidates for the Claude fallback.
+- 2026-10-11 (Phase 2 done): `core/http.py`, `core/cache.py`, `core/sources/{base,freedictionary,wiktionary}.py`, `core/resolver.py`; tests `test_http_cache.py`, `test_sources.py`, `test_resolver.py` (shared fakes in `tests/fakes.py`), live `test_network.py` (3 tests). 109 offline tests pass, 3 network tests pass live, mypy strict clean.
+  - **`http.py`:** `HttpClient(transport=None, *, user_agent=USER_AGENT, timeout=15, min_interval=1.0, host_intervals=None, max_retries=3, backoff=2.0, max_retry_after=60, sleep, clock)`; methods `request(method, url, headers=, body=) -> Response | None`, `get_text(url) -> str | None`, `get_json(url) -> Any` (None on 404), `post_json(url, payload, headers) -> Any` (for Phase 4). Module-level `get_text/get_json/post_json` use a lazy `default_client()`. `Transport = (method, url, headers, body, timeout) -> Response(status, headers lower-cased, body)`; it returns error statuses instead of raising (default `urllib_transport`). 404 → None. 429/503 → sleep `Retry-After` (seconds or HTTP date) or `backoff*2**attempt`, retry up to `max_retries`, then `RateLimited`; a `Retry-After` above `max_retry_after` raises `RateLimited` immediately. Other statuses, bad JSON and `OSError` (offline/timeouts) → `HttpError` (`status` 0 for network errors; `RateLimited` subclasses it). Per-host throttle reserves the slot under a lock, so it is safe from one worker. `request_count` counts requests. UA: `anki-ipa-filler/0.1 (Anki add-on; contact: https://github.com/)`.
+  - **`cache.py`:** `Cache(path | None, *, negative_ttl=30 days, autosave_every=25, clock=time.time)`; `get(source, query) -> CacheEntry(value, timestamp) | None` (None = absent or expired negative; `entry.is_negative` = cached miss), `put(source, query, json_value_or_None)`, `save()`/`flush()` (temp file + `os.replace`, no-op if clean), `len()`. File: `{"version":1,"entries":{"source\tquery":[ts, value]}}`. A corrupt file is ignored and overwritten. `path=None` is in-memory. RLock-protected. Values are `Pronunciations.to_dict()` (raw, un-normalised IPA), so changing `normalize_map` needs no cache reset.
+  - **`sources/base.py`:** `Pronunciations(uk, us, other)` (raw IPA lists in source order; `bucket()`, `add()`, `is_empty()`, `to_dict()/from_dict()`), `Source` protocol (`name`, `lookup(text) -> Pronunciations | None`, runtime-checkable), `classify(labels) -> set | None` (no labels → `{"other"}`; UK: UK/RP/Received Pronunciation/British/SSB…; US: US/GA/General American…; historic or marginal labels/qualifiers such as Early Modern, obsolete, rare, dated, nonstandard → None = drop; other accents AU/NZ/CA/Scotland/India → empty set = drop), `prefer_phonemic` (drops `[...]` from buckets that also have `/.../`).
+  - **FreeDictionaryAPI shape:** `{"word", "entries":[{"language":{"code":"en"}, "partOfSpeech", "pronunciations":[{"type":"ipa","text":"/ˈɹɛk.ɔːd/","tags":["Received Pronunciation"]}], "senses", ...}], "source":{"url": wiktionary page, "license": CC BY-SA 4.0}}`. It is a parsed Wiktionary. **Unknown word = HTTP 200 with `entries: []`** (not 404). Phrases often have `pronunciations: []`. Tags are free-form: "Received Pronunciation", "UK", "General American", "US", "General Australian", and "Early Modern" arrives split as `["Early","Modern"]`. FD adds `ˈ` to monosyllables (`/ˈskəʊp/`, `/ˈhiː/`), Wiktionary does not. Function words come with long tag-less lists (`in` → `/ən/, /ɪn/, /ɘn/`; `a` → RP `/ʌ/` first). No rate-limit headers in responses.
+  - **Wiktionary:** `action=raw` on a missing page is HTTP 404 with an HTML body (fixture `qwzxv.wikitext` is that page). Parser reads only `==English==`, every `Pronunciation`/`Pronunciation N` heading at any depth (multiple etymologies), strips `<!-- -->` and `<ref>`. **Accent labels often sit on `{{enPR|...|a=RP}}` before the `{{IPA}}` on the same line** (`* {{enPR|rĕkʹôrd|a=RP}}, {{IPA|en|/ˈɹɛk.ɔːd/}}`), so enPR's `a=` is used as the line label while its transcription is ignored. Precedence per item: inline `<a:..>` / `aN=` → template `a=` → last `{{a|..}}`/`{{accent|..}}` on the line (optional leading `en`) or enPR `a=` → a label-only parent bullet. `q=`/`qN=`/`<q:..>`/`{{q|..}}` qualifiers that are historic/marginal drop the item. Items must look like `/…/` or `[…]`. `nocount=` etc. ignored. Redirect (`#REDIRECT [[x]]`) followed once (double redirect → None); titles tried exact then lower-case; fetched pages memoised per source instance. Some common words have **no IPA at all** (insurmountable: audio only; adjuster/adjustor: no Pronunciation section) → Phase 4 fallback.
+  - **`resolver.py`:** `Resolver(sources, cache=None, norm_cfg=None, accent_preference=("uk","us"), word_by_word=True, *, max_variants=2, max_phrase_words=6, max_errors=3, cancel=None, progress=None)`. `resolve(raw) -> Result(ipa, source, complete, missing)`; `resolve_many(raws) -> list[Result]` (calls `progress(done, total, headword)` before each item and once at the end, checks `cancel()` before each item and before every network lookup, returns a shorter list when cancelled, always `cache.save()`s). `resolver.disabled: dict[name, reason]` for the Phase 3 summary. Flow per alternative: whole text (skipped above `max_phrase_words` words, so long sentences go straight to word-by-word) through sources in order; the first source with a usable variant wins; variants = up to 2 distinct normalised, non-fragment entries of the first non-empty bucket in `accent_preference + ["other"]`, **phonemic `/…/` preferred over `[…]` across buckets** (Wiktionary's `to` has only `[tu̟ː]` tagged UK). *Superseded by the Phase 4 accent fix below.* Miss + multi-word + `word_by_word` → `compose` with a per-token lookup (token as written, then lower-case; first variant only). If no token resolved, `ipa=None`. Missing alternatives are dropped from the joined IPA but make `complete=False` and are listed in `missing`. `source` = the single contributing source name or `"mixed"`. Empty headword → `Result(None, None, False, [])`. `RateLimited` disables the source for the run; other `HttpError`s are a transient, uncached miss, and `max_errors` consecutive ones disable it too.
+  - **From config:** `build_resolver(config, cache_path=None, *, http=None, cache=None, cancel=None, progress=None)`; `SOURCE_CLASSES = {"freedictionary", "wiktionary"}` (unknown names such as "claude" are skipped; Phase 4 adds it). Phase 3: `build_resolver(cfg, os.path.join(addon_dir, "user_files", "ipa_cache.json"), cancel=<reads a flag the main thread sets from mw.progress.want_cancel()>, progress=<forwards via mw.taskman.run_on_main>)` inside `QueryOp.without_collection`.
+  - **Rate limits:** default 1 s per-host interval for both hosts. FD's ~1000 req/h will likely be exceeded on a full 944-note run (word-by-word multiplies lookups); FD then answers 429 → `RateLimited` → disabled → Wiktionary carries on (same data, slightly more work to parse). Cache makes reruns cheap. Live requests this phase: ~69 (14 fixtures, 1 header probe, 3 network tests, 51 for the cold 15-headword sanity run, i.e. ~3.4 requests per headword).
+  - **Live sanity outputs (default config):** sassy `ˈsasi`; outbreak `ˈaʊtbreɪk`; improvize None; clock in `klɒk ən`; garter belt `ˈgɑːtə ˈbɛlt`; slack off `slæk ɒf`; cease and desist `siːs ænd dɪˈsɪst`; put somebody on `pʊt ˈsʌmbˌɒdi ɒn`; to cook up `tuː kʊk ʌp`; Don't interfere! `dəʊnt ˌɪntəˈfɪə(r)!` (mixed); He was detained by a snow storm. `ˈhiː wəz dɪˈteɪnd baɪ ʌ snəʊ̯ stɔːm.`; insurmountable None; nuisance `ˈnjuːsəns`; adjustor, adjuster None; show, don't tell `ʃəʊ dəʊnt tɛl` (FD has the whole phrase, without the comma).
+  - **Style gaps vs the user's style (proposed, NOT applied; the collection was not read, comparison is against the style notes above):** (1) DRESS `ɛ` → `e` and SQUARE `ɛː` → `eə` (Wiktionary uses modern-RP `ɛ`; OALD/Cambridge-style British uses `e`): `normalize_map` += `{"ɛː": "eə", "ɛ": "e"}` (order matters; `ɛː` first). (2) TRAP `a` → `æ` (`ˈsasi`): plain char maps can't do it safely (`aɪ`, `aʊ`); needs a context rule `a(?![ɪʊː])` → `æ`. (3) optional r `(ɹ)` → `(r)` already via `ɹ→r`; decide whether to drop it (`"(r)": ""`). (4) strip non-syllabic/advanced diacritics U+032F `̯` and U+031F `̟` (`snəʊ̯`). (5) drop `ˈ` on monosyllables (FD adds it: `ˈhiː`, `ˈbɛlt`). (6) Function words in word-by-word mode get odd first variants (`in` → `ən`, `a` → `ʌ`, `and` → `ænd`); propose a small built-in table of British forms (a ə, an ən, the ðə, to tə, and ənd, of əv, in ɪn, for fə, at ət, was wəz, by baɪ…) applied only to tokens inside phrases. Verify (1)–(6) against the user's existing IPA (sample some filled notes) before applying.
+- 2026-10-11 (Phase 2b done, British style normalisation): applies Phase 2's proposed style gaps (1)–(6). Changed `core/normalize.py`, `core/compose.py`, `core/resolver.py`, `config.json`, `config.md`; new `tests/test_style.py`. 166 offline tests pass, mypy strict clean. The spot check re-ran the Phase 2 sanity script on the cached data with 0 requests.
+  - **Pipeline (`normalize_ipa`, per raw source result):** strip delimiters → `normalize_map` → tie bars → syllable dots → `british_vowels` → `strip_optional_sounds` → collapse spaces → `strip_monosyllable_stress` (per space-separated word) → `strip_diacritics`. Then compose (with weak forms), then trailing punctuation. Composed output is never normalised, so `[word]` placeholders survive.
+    - **Deviation from the requested order:** the stress strip runs *before* the diacritic strip, so a syllabic consonant still counts as a nucleus (`ˈbʌtn̩` keeps its stress and becomes `ˈbʌtn`). Nucleus counting ignores every other combining mark, so `snəʊ̯` and similar don't affect it.
+  - **`VOWEL_RULES`** (ordered regexes, public constant; `british_vowels(s)`): `ɛː`→`eə`, `ɛ`→`e` (which also gives `ɛə`→`eə`), `a(?=marks*ː)`→`ɑ` (so `aː`→`ɑː`), `a(?!marks*[ɪʊː])`→`æ`. `aɪ` and `aʊ` are untouched, even with a diacritic on the second element. The rules apply to every bucket (US fallback too).
+  - **Optional segments (`strip_optional_sounds`):** `(r) (ɹ) (ɾ) (h) (t) (d) (p) (k)` are dropped (linking r, `(h)wɪtʃ`, epenthetic stops as in `tʃɑːn(t)s`). Any other parenthesised segment keeps its content without the parens: `ˈles(ə)n`→`ˈlesən` (matches the deck's `ˈlesən`), `n(j)uː`→`njuː`, `(ː)`.
+  - **Diacritics:** U+0300–036F and U+1DC0–1DFF (`̯ ̟ ̃ ̩ ̥`, tie bars…) and `ˑ`. `ː`, `ˈ`, `ˌ` and modifier letters such as `ʰ` are kept. `ç` and other precomposed letters are kept (no NFD).
+  - **Monosyllable stress (`count_nuclei`, `strip_monosyllable_stress`):** a nucleus is a diphthong (`eɪ aɪ ɔɪ əʊ aʊ ɪə eə ʊə oʊ ɛə ɛɪ ʌɪ ɑɪ ɒʊ`), a vowel (long or short), or a consonant with syllabic `̩`. A leading `ˈ`/`ˌ` is dropped only when there is exactly 1 nucleus. Triphthongs count as 2 (`ˈfaɪə` keeps its stress, as in OALD).
+  - **Weak forms (`compose.FUNCTION_WORDS`, word → (weak, strong)):** a ə/ə, an ən/ən, the ðə/ðə, to tə/tuː, and ənd/ænd, of əv/ɒv, for fə/fɔː, at ət/æt, from frəm/frɒm, was wəz/wɒz, were wə/wɜː, can kən/kæn, some səm/sʌm, but bət/bʌt, than ðən/ðæn, as əz/æz. Strong only: in ɪn, on ɒn, up ʌp, off ɒf, out aʊt, by baɪ. Not included: that, you, your.
+    - The table matches case-insensitively and **replaces the dictionary lookup entirely**, so there are fewer requests and no more `ən`/`ʌ`.
+    - It is used only when compose has at least 2 word tokens. Single-word headwords always use the dictionary (headword `in` still gives the source's `ən, ɪn`).
+    - **Final position** means the last word, or a word followed by `, ; : . ! ? ...` once dropped quotes and brackets are skipped. It takes the strong form. Articles have strong = weak, so `a` is never `ʌ`/`eɪ` in phrases.
+    - `weak_forms: false` switches to the strong table forms (`tuː kʊk ʌp`). It does not switch back to dictionary lookup.
+    - `compose(..., *, function_words=None, weak_forms=True)` (off by default; the resolver passes `FUNCTION_WORDS`). `Composed.from_table` counts the table hits.
+    - Resolver: a phrase resolved only from the table (`out of`) is a result with `source="builtin"` (`resolver.BUILTIN_SOURCE`). Table words never appear in `missing`.
+  - **New config keys** (default `true`): `british_vowels`, `strip_optional_sounds`, `strip_diacritics`, `strip_monosyllable_stress` (in `NormalizeConfig`, via `from_config`), and `weak_forms` (`Resolver(weak_forms=)`, via `build_resolver`).
+  - **Updated test expectations, all caused by the new defaults:**
+    - `ɛ`→`e` (`ˈrekɔːd`, `eks`, `tel`).
+    - `[ˈæpl̩]`→`ˈæpl` (syllabic mark stripped).
+    - `/ˈɡʊd/`→`gʊd` (monosyllable).
+    - The `normalize_map={}` config test also turns off `british_vowels`.
+    - `clock in qwzxv` no longer looks up `in`.
+    - The sentence test now gives `hiː wəz [detained] baɪ ə snəʊ stɔːm.` with only `detained` missing.
+  - **Before → after (cached live data):**
+    - sassy `ˈsasi`→`ˈsæsi`
+    - clock in `klɒk ən`→`klɒk ɪn`
+    - garter belt `ˈgɑːtə ˈbɛlt`→`ˈgɑːtə belt`
+    - cease and desist `siːs ænd dɪˈsɪst`→`siːs ənd dɪˈsɪst`
+    - to cook up `tuː kʊk ʌp`→`tə kʊk ʌp`
+    - Don't interfere! `dəʊnt ˌɪntəˈfɪə(r)!`→`dəʊnt ˌɪntəˈfɪə!`
+    - He was detained by a snow storm. → `hiː wəz dɪˈteɪnd baɪ ə snəʊ stɔːm.`
+    - show, don't tell `ʃəʊ dəʊnt tɛl`→`ʃəʊ dəʊnt tel`
+  - **Not addressed:** `put somebody on` still gives FD's odd `ˈsʌmbˌɒdi`. `can`/`some` used as a noun or determiner mid-phrase get the weak form (`can opener` → `kən`), accepted as a trade-off. `the` before a vowel stays `ðə`.
+- 2026-10-11 (Phase 3 done, Anki integration): new `core/batch.py`, `ops.py`, rewritten `ui.py`; `tag_partial` in config.json/config.md (plus a usage paragraph); tests `test_batch.py` (pure) and `test_integration.py` (temp `Collection`). 188 offline tests pass, mypy strict clean.
+  - **UI flow (`ui.py`, thin):** `_on_fill` reads config on the main thread → `QueryOp` `ops.collect_words(col, Fields, selected or None)` → empty: tooltip "nothing to do in the selected notes (2 IPA already filled)" → `QueryOp(...).without_collection().with_progress()` builds the resolver in the worker (`build_resolver(config, <addonsFolder>/user_files/ipa_cache.json, cancel=Event.is_set, progress=...)`), resolves the **distinct** headwords (`unique_words`), `try/finally cache.save()` → `build_plan` → `CollectionOp` `ops.apply_plan` (skipped when the plan is empty) → `summarize` + `summary_text` → `_show_summary` (`showText(..., copyBtn=True, plain_text_edit=True)`). Failures in any op → `_on_failure` → `showWarning`.
+    - **Progress/cancel:** the worker's progress callback posts `show_progress` via `mw.taskman.run_on_main` (label "Looking up IPA i/N: <cleaned word>" truncated to 60 chars, `value=i-1`, `max=N`). A 150 ms `QTimer` plus each progress update copy `mw.progress.want_cancel()` into a `threading.Event`; the worker never touches Qt. Window title "Fill missing IPA (Esc to cancel)" (`mw.progress.set_title`). Esc / closing the progress window cancels; results resolved before the cancel are still written.
+    - **Gotchas:** `mw.progress.update()` is ignored until the progress window is shown (~600 ms), so fast (cached) items don't change the label. `QueryOp.with_progress()` goes through `taskman.with_progress`, which ignores `without_collection()` (still `uses_collection=True`); harmless because the dialog is modal. The e2e probe and tests patch module-level `ui._show_summary`, `ui._on_failure`, `ui.tooltip`, `ui.build_resolver`; keep calling them by module-global name.
+  - **`core/batch.py` (pure, no anki/aqt):** `Fields.from_config(cfg)` (note_type, word, ipa, tag_auto, tag_llm, tag_partial, overwrite) and `Fields.search()`; `build_search(config)` moved here (`ui.build_search` re-exports it). `field_is_empty(v)` (`strip_markup(v).strip() == ""`, so `&nbsp;`/`<br>` count as empty; the Browser search `"IPA-english:"` only matches truly empty fields). `skip_reason(type_name, fields, Fields) -> None | SKIP_NOTE_TYPE | SKIP_NO_WORD | SKIP_FILLED`. `unique_words(items)`. `tags_for(Result, Fields)`: `tag_auto`, + `tag_llm` if `Result.source in LLM_SOURCES` (`{"claude"}`, Phase 4 hook), + `tag_partial` if `not complete`. `build_plan(items, {word: Result}, Fields) -> {nid: Planned(ipa, tags, source, partial)}` (items with no result, i.e. cancelled, or `ipa=None` are left out). `summarize(items, results, plan, written, *, words_total, cancelled, disabled, errors) -> Summary` (per-note counts: filled per source, partial, missed + distinct cleaned missed headwords, not processed, skipped because changed meanwhile). `summary_text(Summary, Fields)`; `SOURCE_LABELS` maps source names (incl. "mixed", "builtin", "claude") to display names.
+  - **`ops.py` (anki only):** `collect_words(col, Fields, selected=None) -> Collected(items, skipped{reason: n})` (selection filtered with `skip_reason`; no selection = `find_notes(Fields.search())`, also filtered). `apply_plan(col, plan, Fields) -> WriteOutcome(changes, written, skipped)`: re-fetches each note (`NotFoundError` → skipped), re-checks `skip_reason` (IPA filled meanwhile → skipped, unless overwrite), sets the field, `add_tag`s, then `pos = add_custom_undo_entry("Fill IPA")`, `update_notes`, `merge_undo_entries(pos)`. No undo entry when nothing is left to write. `WriteOutcome` has `.changes`, so `CollectionOp` accepts it (`HasChangesProperty`).
+  - **Robustness (small Phase 2 changes):** `HttpClient.request` also maps `http.client.HTTPException` (e.g. `IncompleteRead`) to `HttpError(status=0)`. `Resolver._source_lookup` now treats *any* non-`RateLimited` exception from a source as a transient, uncached miss counting towards `max_errors`; non-HTTP ones are listed in `resolver.unexpected_errors` and shown in the summary. Verified by tests: network errors and parser bugs never abort a batch.
+  - **Undo verification:** `test_integration.py` creates "English words" with the 6 fields in a temp collection, checks `build_search` finds exactly the empty ones, runs `apply_plan` with fake results, asserts fields/tags (incl. `ipa::partial`, `ipa::llm` for `source="claude"`), that a note filled meanwhile and all other notes are untouched, that `undo_status().undo == "Fill IPA"`, and that one `col.undo()` restores every note. `UndoStatus` is an untyped protobuf for mypy: read `.undo` through an `Any` variable (the `col.undo_name()` helper is deprecated).
+  - **E2E (headless, real GUI code, on a copy):** refreshed `scratchpad/anki-copy` (prefs21.db + `User 1` collection/media; sync disabled by unpickling `profiles.data` and setting `syncKey=None, autoSync=False, syncMedia=False`), seeded the Phase 2 cache, `ANKI_SINGLE_INSTANCE_KEY=anki_ipa_test QT_QPA_PLATFORM=offscreen anki -b <copy>`, probe add-on `addons21/zz_probe` (on `profile_did_open`: open Browser, `search_for("nid:...")` + `table.select_all()` on 15 empty-IPA notes, trigger the menu action, poll until `_show_summary` is called, snapshot, `mw.form.actionUndo.trigger()`, compare). Run 1: 28 live requests, 22 s, 13 filled (11 FreeDictionary, 2 mixed), 1 partial, 2 missed (improvize, insurmountable); Undo label was "Undo ⁨Fill IPA⁩" (Qt adds bidi isolation marks) and one undo restored all 15 notes exactly (existing tags like `Nemo`/`leech` kept). Run 2 (cached, 0 requests): simulated Esc after "Looking up IPA 7/15: rank" → summary "CANCELLED after 7 of 15 headwords", 7 notes written, undo restored. Selecting 2 filled notes gave the "nothing to do" tooltip. The real profile was untouched.
+    - **The cache lands in the repo:** the copy's `addons21/anki_ipa` symlinks to `src/anki_ipa`, so the e2e cache is `src/anki_ipa/user_files/ipa_cache.json` (gitignored, 77 entries now). Delete it for a cold run.
+  - **Problems seen (not fixed, for later phases):** `four` → `for`: FD has UK only as narrow `[fɔː]`, and the Phase 2 "phonemic across buckets first" rule picks the untagged `/foɹ/` (→ `for`). A fix would rank phonemic within preferred buckets before falling to `other`, but must keep the `to` → `tuː` case. `until` → `ʌnˈtɪl` (FD's first UK variant; the deck style would be `ənˈtɪl`). `consecutively`, `1989`, `improvize`, `insurmountable` are missed by both sources → Phase 4. Numbers (`1989`) can't be looked up at all; Claude should handle the whole sentence.
+  - **Phase 4 hook points:** add `"claude"` to `resolver.SOURCE_CLASSES` (or a post-pass over partial/missed results inside the `ui._resolve` worker op); `batch.LLM_SOURCES` already tags `Result.source == "claude"` with `tag_llm`, and `SOURCE_LABELS["claude"]` exists. Not yet done from the verification protocol: the full 944-note run on the copy (FD rate limit, ~3 requests per headword).
+- 2026-10-11 (Phase 4 done, Claude fallback): new `core/sources/claude.py`, `tests/test_claude.py`; changed `core/resolver.py`, `core/batch.py`, `core/http.py`, `core/sources/base.py`, `ui.py`, `config.json`, `config.md`, `tests/test_resolver.py`. 242 offline tests pass, mypy strict clean. **No live Claude request was made** (no key configured; all tests use a fake transport). The optional headless UI check with a fake Claude transport was not done.
+  - **Part A, accent fix (`Resolver._variants`):** the Phase 2 rule "phonemic before narrow across buckets" picked FD's untagged `/foɹ/` for `four` (UK only narrow `[fɔː]`, `[foː]`). The literal order "UK phonemic → US phonemic → untagged phonemic → narrow" would still pick `/foɹ/`, so the untagged step got an agreement check. New order: (1) phonemic of the tagged buckets in `accent_preference` order; (2) untagged phonemic **only if** one of them matches (by skeleton: no diacritics, `ˈˌʰˑ()`) a narrow form of the first tagged bucket that has narrow forms, or no tagged narrow form exists; (3) **first** narrow form of that tagged bucket only (narrow lists are allophonic detail: `fɔː`, not `fɔː, foː`); (4) untagged phonemic that disagreed; (5) first untagged narrow. Cached live data: four `for`→`fɔː`; to still `tuː, tə`; until/clock/a/in unchanged. Tests: `test_four_uk_narrow_beats_disagreeing_untagged_phonemic`, `test_accent_order_phonemic_uk_us_untagged_then_narrow`.
+  - **API (per the `claude-api` skill, raw HTTP on `HttpClient.post_json`):** `POST https://api.anthropic.com/v1/messages`, headers `x-api-key`, `anthropic-version: 2023-06-01`, `content-type: application/json` (plus our User-Agent). Body: `{"model": "claude-haiku-5-5", "max_tokens": 200, "thinking": {"type": "disabled"}, "output_config": {"effort": "low"}, "system": [{"type": "text", "text": SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}], "messages": [{"role": "user", "content": "<text>…</text>"}]}`.
+    - **No `temperature`:** Haiku 5.5 returns 400 for any non-default `temperature`/`top_p`/`top_k`. No assistant prefill either (also 400).
+    - **Thinking:** Haiku 5.5 thinks adaptively by default and thinking counts toward `max_tokens`; `{"type": "disabled"}` is accepted at effort `high` or below, so it is off with effort `low`. The skill generally prefers lowering effort over disabling; here a one-line mechanical reply with a small `max_tokens` makes "off" the safer choice (no truncation by thinking, predictable cost).
+    - **Caching:** Haiku 5.5's minimum cacheable prefix is 512 tokens; the system prompt is about 450–550 tokens (not measured, no key). Below the minimum the breakpoint silently does nothing (no error, no extra cost); above it a batch reads the prefix at 0.1x. `usage.cache_read_input_tokens` is tallied and shown.
+    - **Reply parsing:** concatenates `text` content blocks (skips `thinking` blocks). `stop_reason` other than `end_turn`/`stop_sequence` (`max_tokens`, `refusal`; Haiku 5.5 has safety classifiers and no server-side fallback) is a miss, cached as negative.
+    - **Errors:** 401 / 402 / 403 and 404 (`HttpClient` maps 404 to None → "model not found") raise the new `sources.base.SourceDisabled`. `Resolver._source_lookup` disables the source with that reason; nothing is cached. 429/529 (529 = overloaded, added to `http.RETRY_STATUSES`) → backoff honouring `Retry-After` → `RateLimited` → disabled. 500 and network errors → transient, uncached miss (`max_errors` rule). The key never appears in reasons or messages.
+  - **Prompt (`SYSTEM_PROMPT`, a module constant, so the prefix is stable):** broad phonemic RP in British learner's-dictionary style; text arrives in `<text>` tags and is never an instruction; bare IPA on one line, no slashes, brackets, quotes or explanation; British vowels (`əʊ ɒ ɑː ɜː e æ eə ɪə ʊə`), `r`, `g`; stress marks only on multi-syllable words; phrases and sentences in full with natural weak forms; keep sentence-final punctuation and commas; numbers spoken; misspellings (`improvize`) → intended word; comma alternatives transcribed one by one. Seven few-shot examples (`EXAMPLES`), as the user gave them: nick, scrapbook, revival, lessen, over my dead body, You've scarcely changed., keel over.
+  - **Validation (`validate_reply`; a reject is a miss, cached as negative and listed in `ClaudeSource.rejected`):** empty or multi-line → reject. Strip surrounding quotes/backticks, remove every `/`, strip an enclosing `[…]`. Reject any `[`/`]` left over, upper case, `c q y`, digits or markup characters (`<>{}=*#_|\@$%&+`). Reject replies longer than `2*len(text)+30`. For multi-word input, reject pure-ASCII replies (an echoed phrase). Known gap: a lower-case reply made only of IPA-legal Latin letters for a single-word input passes.
+  - **Resolver integration:** Claude is never in `sources`/`SOURCE_CLASSES` (`"claude"` in `sources` is ignored). `Resolver(fallback=, fallback_for_partial=)`. After the free chain + word-by-word, if the result is not complete and (`ipa is None` or `for_partial`) and the fallback is not disabled, `_fallback_result` sends **one request per headword**: alternatives re-joined with `, ` plus `trailing_punct` (cleaned `text`, i.e. parentheticals dropped, the same text the free sources see). The reply goes through `normalize_ipa` (full Phase 2b pipeline; weak forms are left to the model), trailing `. ! ? … , ; :` are stripped, alternatives are split on `,` and deduplicated with `join_alternatives`, then `with_punct(hw.trailing_punct)`. Success → `Result(ipa, "claude", True, [])`; a miss keeps the free (partial) result. Cache: source `claude`, query = the sent text, value `{"uk": [validated raw reply]}`, negative results too.
+  - **build_resolver:** `claude.enabled` + key (`claude.api_key`, else env `ANTHROPIC_API_KEY`) → `ClaudeSource(client, key, model)` on the shared `HttpClient` (1 s per-host interval). Enabled without a key → no fallback, `resolver.disabled["claude"] = NO_KEY_REASON`, no request. `resolver.fallback_status()` → None (not configured), `"on (N API call(s), X input + Y output tokens)"` or `"disabled: <reason> (...)"`.
+  - **Summary:** `ui._Resolved.llm_status` → `summarize(..., llm_status=)`; `Summary.llm_filled` = distinct (cleaned headword, ipa) written by Claude. `summary_text` adds `Claude fallback: <status>` (the Claude reason is then not repeated under "Sources disabled") and "Filled by Claude (n), please review (Browser search: tag:ipa::llm):" with `word  →  ipa` lines. The per-source count line shows `Claude: n`.
+  - **Cost (skill pricing, cached 2026-10-06):** Claude Haiku 5.5 costs $0.10 / $0.50 per MTok input/output (prompts ≤ 100K tokens). Per lookup ≈ 550 input + 10–50 output tokens ≈ $0.00007, so **≈ $0.07 per 1,000 lookups**. The requested "$0.04" was a bit low and is corrected in `config.md`. The whole deck (at most a few hundred fallback headwords) costs a few cents. These are estimates; `count_tokens` was not run (no key).
+  - **The user needs to:** set `claude.enabled: true` and either put the key in `claude.api_key` (stored in plain text in `meta.json`, which is gitignored here) or start Anki with `ANTHROPIC_API_KEY` set. Before trusting a full run, do a small live check (about 5 headwords such as improvize, insurmountable, consecutively, and a sentence with `1989`) and review the `ipa::llm` list.
+- 2026-10-11 (Phase 5 done, polish): new `editor_button.py`, `tests/test_editor_logic.py`, `README.md`, `LICENSE` (MIT, "2026 Paweł Warowny"), `scripts/package.sh`; changed `core/batch.py`, `core/resolver.py`, `ops.py`, `ui.py`, `config.md` (rewritten), `tests/test_integration.py`. 256 offline tests pass, mypy strict clean (30 files).
+  - **Editor support matrix (26.08.1 sources):** `gui_hooks.editor_did_init_buttons(buttons, editor: Editor | NewEditor)` fires for both: legacy `Editor` in `setupWeb`, Svelte `NewEditor` in `_set_ready` (on the webview's `editorReady`). Both have the same `addButton(icon, cmd, func, tip=, label=, ...)`, whose wrapper runs `call_after_note_saved` before `func`, and both render the button with the same `AddonButtons` toolbar component (`button[data-command=anki_ipa_fill]`).
+    | host | legacy `Editor` | Svelte `NewEditor` |
+    |---|---|---|
+    | Browser / Edit Current (existing note) | yes: `apply_plan` CollectionOp (undo "Fill IPA") with `initiator=editor`, then `editor.note.load()` + `loadNoteKeepingFocus()` | yes: `editor.nid` → `read_note` → same `apply_plan` op; the webview reloads itself on the op notification (`anki.onOperationDidExecute` → `reloadNote` when not in add mode) |
+    | Add window (unsaved note) | yes: `fill_note(editor.note)` + `loadNoteKeepingFocus()`, no DB write; saved on Add | **no**: no Python-side note (`nid` is None, fields live in the webview); tooltip `SVELTE_ADD_UNSUPPORTED`. The webview exposes `setFields`/`setTags` globals, but driving its stores from Python is undocumented internals and its tag sync is unclear, so not done |
+    - The Browser picks `NewEditor` when `col.experiment_enabled(ExperimentFlag.SVELTE_EDITOR)` (config `experimentalFeatures["1"]`), inverted by holding Shift; Add/Edit windows use `mw._open_new_or_legacy_dialog`. The Browser itself only reloads a legacy editor on `operation_did_execute` (`handler is not self.editor`).
+  - **Flow (`editor_button.py`):** `_on_button` → note-type/word check via pure `batch.check_editor_note` (= `skip_reason` with overwrite forced on; a filled IPA field is `needs_confirm` instead of a skip) → `askUser(defaultno=True)` if filled → `QueryOp(...).without_collection().with_progress("Looking up IPA...")` resolving the one headword with `ui.build_resolver(config, ui.cache_path())` (same cache file, `cache.save()` in `finally`) → `batch.plan_single` (= `build_plan` for one item, so the same tags `ipa::auto`/`ipa::llm`/`ipa::partial`) → after another `call_after_note_saved`, write as in the matrix → tooltip `batch.editor_message` (HTML-escaped). A confirmed overwrite passes `replace(fcfg, overwrite=True)` to `apply_plan`; otherwise `apply_plan`'s re-check skips a note filled meanwhile (tooltip `CHANGED_MEANWHILE`). No keyboard shortcut (Ctrl+Shift+I etc. collide with Anki's own).
+    - `ops.py` gained `read_note(col, nid) -> NoteSnapshot(type_name, fields)` and `fill_note(note, planned, fcfg)` (also used by `apply_plan`); `ui.register` imports `editor_button` lazily (it imports `ui`). Probes patch `editor_button.tooltip`, `editor_button.askUser`, `ui._on_failure`, `ui.build_resolver`.
+  - **Headless GUI check (fresh `scratchpad/anki-copy`, sync disabled, `ANKI_SINGLE_INSTANCE_KEY=anki_ipa_test QT_QPA_PLATFORM=offscreen`, probe `addons21/zz_probe`, cached data, 0 requests).** Select one card with `b.search_for("nid:N")` + `b.table.select_single_card(cid)`; `select_all()` selects every card of the note, so the editor stays empty. Click the real DOM button with `editor.web.eval('document.querySelector(\'button[data-command="anki_ipa_fill"]\').click()')`. Results:
+    - legacy Browser: sassy empty → `ˈsæsi` + `ipa::auto` in the DB and in `editor.note`; undo label "Fill IPA", one undo restored it.
+    - filled `rank` (`ræŋk`): No left it untouched; Yes overwrote (`reɪŋk, reŋk`, see below) + tag; undo restored.
+    - `improvize` → "nothing found"; a Basic note → the note-type tooltip.
+    - legacy Add window: `nuisance` → `ˈnjuːsəns` + `ipa::auto` on the in-memory note, id 0, note count unchanged.
+    - Svelte Browser (`mw.col._experiments["1"] = True`, reopen Browser): goofy → `ˈguːfi` in the DB, `get_note_info()` showed the reloaded webview field, undo worked.
+    - Svelte Add window → unsupported tooltip.
+    - Probe gotcha: with a `NewAddCards` window still open, `mw.close()` hung (needed `kill`). Close it first next time. The real profile and the repo cache were untouched.
+  - **Style fix:** `resolver.WORD_OVERRIDES = {"until": "ənˈtɪl"}`, checked case-insensitively in `Resolver._chain` for any one-word query (headword or word-by-word token) before sources/cache; source `builtin` (label now "built-in table (function words, overrides)"). `Resolver(overrides={})` disables it. Not configurable on purpose: it is a patch list for forms where the source's first RP form disagrees with OALD/Cambridge, not a dictionary.
+  - **Packaging:** `scripts/package.sh` (executable, `set -euo pipefail`) zips the CONTENTS of `src/anki_ipa` with `zip -r -X` into `anki_ipa.ankiaddon` at the repo root (gitignored). It excludes `__pycache__`, `*.pyc`/`*.pyo`, `meta.json`, dotfiles and `user_files/*`, adds `user_files/README.txt` back, then refuses (deletes the zip, exit 1) if a forbidden path got in; the check was tested by adding `ipa_cache.json`. Result: 23 entries, 43,253 bytes (44K), with `manifest.json`/`__init__.py` at the root and no cache, meta.json or pycache.
+  - **Licensing:** code MIT (`LICENSE`). README covers install (dev symlink + `.ankiaddon`), usage and sources, and attributes the IPA to Wiktionary contributors under CC BY-SA 4.0 via FreeDictionaryAPI.com and the Wiktionary API (with links). It notes that the IPA written into notes is adapted from CC BY-SA data and that Claude is optional. `manifest.json` `homepage` stays `""` (no repo URL).
+  - **Seen, not fixed (outside Phase 5):** `rank` resolves to FD's US `reɪŋk, reŋk`. Its UK bucket is empty, US has phonemic forms, and the untagged `/ˈɹæŋk/` comes after tagged buckets in the Phase 4 order. A fix would prefer untagged phonemic over a *US* bucket when no UK form exists, while keeping `four`. The batch is affected too.
+
+## Status / next steps for the user
+1. **Back up first** (*File > Create Backup*, or copy `~/.local/share/Anki2/User 1`). Then restart Anki with the add-on (symlink, or install `anki_ipa.ankiaddon` from `scripts/package.sh`). Try *Browser > Notes > Fill missing IPA* on a few selected notes, then run it on all 944.
+2. Optional: enable Claude (`claude.enabled: true`, plus `ANTHROPIC_API_KEY` or `claude.api_key`) and re-run. Only misses and partial results are sent, for a few cents in total.
+3. Review `tag:ipa::partial` (`[word]` placeholders) and `tag:ipa::llm` (Claude output) in the Browser. Fix entries by hand or with the editor's **IPA** button, then remove the tags.

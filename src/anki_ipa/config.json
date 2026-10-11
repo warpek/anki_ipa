@@ -1,0 +1,25 @@
+{
+  "note_type": "English words",
+  "word_field": "English",
+  "ipa_field": "IPA-english",
+  "accent_preference": ["uk", "us"],
+  "sources": ["freedictionary", "wiktionary"],
+  "claude": {
+    "enabled": false,
+    "api_key": "",
+    "model": "claude-haiku-5-5",
+    "for_partial": true
+  },
+  "word_by_word": true,
+  "normalize_map": {"ɹ": "r", "ɡ": "g"},
+  "strip_syllable_dots": true,
+  "british_vowels": true,
+  "strip_optional_sounds": true,
+  "strip_diacritics": true,
+  "strip_monosyllable_stress": true,
+  "weak_forms": true,
+  "tag_auto": "ipa::auto",
+  "tag_llm": "ipa::llm",
+  "tag_partial": "ipa::partial",
+  "overwrite_existing": false
+}

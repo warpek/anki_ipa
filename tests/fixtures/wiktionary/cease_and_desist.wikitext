@@ -1,0 +1,41 @@
+==English==
+{{wp}}
+
+===Etymology===
+From {{m|en|cease||stop}}, and {{m|en|desist||to not do again}}. The noun sense can be viewed {{glossary|synchronically}} as an {{glossary|ellipsis}} of ''[[#Verb|cease-and-desist]]'' {{m|en|order#Noun}}.
+
+===Verb===
+{{en-verb|cease<> and desist<>}}
+
+# {{lb|en|legal}} To stop and not resume an action.
+#: {{ux|en|We are told to '''cease and desist''' or we will cease to exist.}}
+
+====Translations====
+{{trans-top|stop and not resume an action}}
+* Chinese:
+*: Mandarin: {{t|cmn|結束和停止|tr=jiéshù hé tíngzhǐ}}
+* Dutch: {{t|nl|houd op en doe van afstand}}
+* Finnish: {{t+|fi|lopettaa}}
+* French: {{t|fr|cessez et renoncez}}
+* German: {{t|de|hören Sie auf und verzichten Sie}}
+* Greek: {{t|el|πάψτε και σταματήστε}}
+* Japanese: {{t|ja|停止及び再発阻止|tr=teishi, oyobi, saihatsu soshi}}
+* Korean: {{t|ko|지-하고 단념-하십시요}}
+* Italian: {{t|it|diffida|f}}
+* Polish: {{t|pl|nakaz zaprzestania działalności|m}}
+* Portuguese: {{t+|pt|cessar}}
+* Russian: {{t|ru|прекрати́те и воздержи́тесь}}
+* Spanish: {{t|es|[[cesar]] [[y]] [[renunciar]] / [[desistir]]}}
+* Swedish: {{t+|sv|upphöra}}
+{{trans-bottom}}
+
+===Noun===
+{{en-noun|head=cease-and-desist|?}}
+
+# {{senseid|en|Q31726}} {{lb|en|legal|mostly|attributive}} A written demand that a party stops and does not resume a certain behavior, such as [[copyright infringement]], [[slander]], or [[libel]], threatening legal action if the recipient fails to do so.
+#: {{alti|en|C&D<id:Q31726><qq:initialism>}}
+#: {{ux|en|She received a '''cease-and-desist''' from his solicitors soon after the podcast.}}
+# {{lb|en|US|legal|mostly|attributive}} An order by a government agency, [[sanction]]ed by a court, that one must stop and not resume a certain (usually illegal) behavior.
+#: {{ux|en|His remarks did not stop the courts from issuing the '''cease-and-desist''' order.}}<!-- https://www.law.cornell.edu/wex/cease_and_desist_order -->
+
+{{cln|en|coordinated pairs|legal doublets|exocentric compounds}}

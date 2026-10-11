@@ -1,0 +1,9 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["network: live requests against real online sources (opt-in: pytest -m network)"]
+addopts = "-m 'not network'"
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+mypy_path = "src"

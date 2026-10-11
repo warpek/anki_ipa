@@ -1,0 +1,51 @@
+==English==
+
+===Etymology===
+{{ety|en|:af|in-<id:not>|surmountable|text=+|tree=1}}
+
+===Pronunciation===
+* {{audio|en|en-us-insurmountable.ogg|a=Mid-Atlantic US}}
+
+===Adjective===
+{{en-adj}}
+
+# Incapable of being passed over, [[surmounted]], or [[overcome]]; [[insuperable]]
+#: {{syn|en|unsurmountable|q=archaic and rare}}
+#: {{ant|en|surmountable}}
+#: {{usex|en|Getting everybody to agree proved to be an '''insurmountable''' difficulty.}}
+#* {{quote-web|en|url=https://www.theguardian.com/world/2023/jan/24/japan-birthrate-population-pm-solution-already-rejected-by-young|author=Justin McCurry|title=Japan PM’s solution to dire birthrate has already been rejected by young|date=2023-01-24|work=The Guardian|passage=Overcoming Japan’s demographic crisis has proved '''insurmountable''' for occupants of the Kantei – the prime minister’s office – long before Kishida moved in last autumn.}}
+
+====Derived terms====
+{{col|en|insurmountableness|insurmountably
+}}
+
+====Translations====
+{{trans-top|incapable of being passed over}}
+* Belarusian: {{t|be|неадо́льны}}, {{t|be|непераадо́льны}}
+* Bulgarian: {{t+|bg|непреодоли́м}}
+* Catalan: {{t|ca|insuperable}}
+* Chinese:
+*: Mandarin: {{t|cmn|[[無法]][[克服]]的|tr=wúfǎ kèfú de}}
+* Czech: {{t+|cs|nepřekonatelný}}
+* Dutch: {{t+|nl|onoverkomelijk}}
+* Finnish: {{t|fi|ylipääsemätön}}, {{t+|fi|ylitsepääsemätön}}
+* French: {{t+|fr|insurmontable}}, {{t+|fr|infranchissable}}, {{t+|fr|impassable}}
+* German: {{t+|de|unüberwindlich}}, {{t+|de|unüberwindbar}}
+* Greek: {{t+|el|ανυπέρβλητος}}, {{t+|el|αξεπέραστος}}
+* Hungarian: {{t+|hu|leküzdhetetlen}}, {{t+|hu|legyőzhetetlen}}, {{t+|hu|áthághatatlan}}, {{t+|hu|áthidalhatatlan}}
+* Irish: {{t|ga|dochloíte}}, {{t|ga|dosháraithe}}
+* Latin: {{t|la|inēluctābilis}}, {{t|la|insuperābilis}}
+* Macedonian: {{t|mk|несовладлив}}, {{t|mk|непремостлив}}
+* Norwegian:
+*: Bokmål: {{t|nb|uoverstigelig}}
+*: Nynorsk: {{t|nn|uoverstigeleg}}
+* Polish: {{t+|pl|nieprzezwyciężony}}, {{t|pl|[[nie]] [[do]] [[pokonania]]}}
+* Portuguese: {{t|pt|insuperável}}, {{t+|pt|inexorável}}
+* Romanian: {{t+|ro|insurmontabil}}
+* Russian: {{t+|ru|непреодоли́мый}}, {{t+|ru|неодоли́мый}}
+* Slovene: {{t|sl|nepremostljiv}}, {{t+|sl|nepremagljiv}}
+* Spanish: {{t|es|insalvable}}, {{t|es|insuperable}}, {{t+|es|infranqueable}}
+* Swedish: {{t+|sv|oöverstiglig}}
+* Turkish: {{t|tr|aşılamaz}}
+* Ukrainian: {{t|uk|неперебо́рний}}, {{t|uk|непобо́рний}}, {{t|uk|непобори́мий}}, {{t|uk|незбори́мий}}, {{t|uk|незбо́рний}}, {{t|uk|нездола́нний}}, {{t|uk|неперемо́жний}}
+{{trans-bottom}}

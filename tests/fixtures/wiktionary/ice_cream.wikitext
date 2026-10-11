@@ -1,0 +1,319 @@
+{{also|icecream|ice-cream}}
+==English==
+[[Image:Strawberry Ice Cream with Strawberries 01.jpg|thumb|right|250 px|Strawberry '''ice cream''' with strawberries.]]
+
+===Alternative forms===
+* {{alt|en|ice-cream|icecream}}
+
+===Etymology===
+{{ety|en|:from|iced cream}}
+Lexicalization of a reduced pronunciation of {{m|en|iced cream}} with regular deletion of ''-d'' before a cluster, from {{compound|en|iced|cream}}. Compare {{m|en|mash potato}}. Compare also {{cog|nds|Iescreem}}, {{m|nds|Ieskreem|t=ice cream}}, {{cog|de|Eiscreme|t=ice cream}}, {{cog|no|iskrem|t=ice cream}}.
+
+===Pronunciation===
+* {{IPA|en|/ˌaɪsˈkɹiːm/|/ˈaɪsˌkɹiːm/|nocount=1|a=RP}}
+* {{audio|en|LL-Q1860 (eng)-Vealhurl-ice cream.wav|a=Southern England}}
+* {{enPR|īs'krēm}}, {{IPA|en|/ˈaɪs.kɹiːm/|nocount=1}}
+** {{audio|en|en-us-ice_cream.ogg|a=California}}
+* {{enPR|īskrēm'}}, {{IPA|en|/aɪsˈkɹiːm/|nocount=1}}
+* {{rhymes|en|iːm|s=2}}
+
+===Noun===
+{{en-noun|~}}
+
+# {{senseid|en|Q13233}}{{lb|en|uncountable}} A [[dessert]] made from [[frozen]] [[sweeten]]ed [[cream]] or a similar substance, usually [[flavour]]ed.
+#: {{ux|en|Strawberries are particularly delicious with '''ice cream'''.}}
+#: {{ux|en|We were having chocolate '''ice cream'''.}}
+#* {{quote-book|en|year=1933|author=w:Frank Clune|title={{w|Try Anything Once (book)|Try Anything Once}}|location=Sydney|publisher=Angus and Robertson|page=71|passage=‘Do I pay you to stand there magging or to deliver '''ice-cream'''?’ the boss roared.}}
+#* {{quote-journal|en|author=Amina Lake Patel|title=I’ve used the Ninja Creami Deluxe ice cream maker that’s all over TikTok for a year. Here’s my review|magazine=w:CNN|url=https://www.cnn.com/cnn-underscored/reviews/ninja-creami|date=2025-07-11|passage=There’s a good chance you’ve heard of the Ninja Creami by now. The original version of the '''ice cream''' maker has been around since 2021, but thanks to TikTok, it’s been one of the buzziest kitchen appliances lately.}}
+# {{lb|en|countable}} A portion of ice cream on a stick, in a cup or in a wafer cone.
+#: {{ux|en|Can I have some money for an '''ice cream''', Mum?}}
+# {{lb|en|slang|uncountable}} The drug [[methamphetamine]].
+
+====Synonyms====
+* {{sense|dessert}} {{l|en|iced cream}} {{qualifier|dated}}, [[frozen cow juice]]
+* {{sense|in a wafer cone}} {{l|en|cone}}, {{l|en|cornet}}, {{l|en|ice cream cone}}, {{l|en|ice-cream cornet}}
+
+====Derived terms====
+{{col4|en|collapse=n|ice cream pop|ice creamer
+|astronaut ice cream
+|dirty ice cream
+|Eskimo ice cream
+|French ice cream|ice cream float
+|harlequin ice cream
+|ice cream bar
+|ice-cream bean|ice cream hair
+|[[ice-cream chair|ice-cream]], [[ice cream chair]]
+|[[ice cream cone|ice cream]], [[ice-cream cone]]
+|ice creamery
+|ice cream headache
+|ice cream maker
+|[[ice cream parlor|ice cream]], [[ice-cream parlor]], [[ice cream parlour|~&nbsp;parlour]]
+|ice cream sandwich
+|ice cream scoop
+|ice cream shop
+|[[ice-cream social|ice-cream]], [[ice cream social]]
+|[[ice-cream soda|ice-cream]], [[ice cream soda]]
+|ice cream soup
+|ice-cream suit
+|ice cream sundae
+|ice cream truck
+|ice cream van
+|ice-creamy
+|rolled ice cream
+|space ice cream
+|stir-fried ice cream
+|potong ice cream
+}}
+
+====Descendants====
+{{top3}}
+* {{desc|ar|آيِس كِرِيم|bor=1}}
+* {{desc|zh|冰淇淋|tr=-|bor=1}}
+* {{desc|hi|आइसक्रीम|tr=āiskrīm|bor=1}}
+* {{desc|nan-hbl|ice cream|tr=-|bor=1}}
+* {{desc|id|es krim|bor=1}}
+* {{desctree|ja|アイスクリーム|tr=aisukurīmu|bor=1}}
+* {{desc|ko|아이스크림|bor=1}}
+* {{desc|mag|𑂅𑂮𑂹𑂍𑂹𑂩𑂲𑂧|tr=iskrīm|bor=1}}
+* {{desc|mi|aihikirīmi|bor=1}}
+* {{desc|ms|aiskrim|bor=1}}
+* {{desc|niu|aisikirīmi|bor=1}}
+* {{desc|nso|aeskrimi|bor=1}}
+* {{desc|pa|ਆਈਸ ਕਰੀਮ|bor=1}}
+* {{desc|sm|'aisakulimi|bor=1}}
+* {{desc|nr|i-ayisikhrimu|bor=1}}
+* {{desc|sw|aiskrimu|bor=1}}
+* {{desc|ss|i-ayisikhrimu|bor=1}}
+* {{desc|tl|ayskrim|bor=1}}
+* {{desc|ta|ஐஸ்கிரீம்|bor=1}}
+* {{desc|tsg|ayskrim|bor=1}}
+* {{desc|th|ไอศกรีม|bor=1}}
+* {{desc|tkl|aiha-kulimi|bor=1}}
+* {{desc|ts|ayisikhirimu|bor=1}}
+* {{desc|ur|آئِس کِرِیم|bor=1}}
+* {{desc|ve|ayisikhirimu|bor=1}}
+* {{desc|xh|iayisikhrim|bor=1}}
+* {{desc|zu|u-ayisikhilimu|bor=1}}
+{{bottom}}
+
+====Translations====
+{{trans-top|dessert}}
+* Abkhaz: {{t|ab|аршәы}}
+* Afrikaans: {{t+|af|ys}}, {{t+|af|roomys}}
+* Ahtna: {{t|aht|baluuʼ}}
+* Albanian: {{t+|sq|akullore|f}}
+* Altai:
+*: Southern Altai: {{t|alt|тоҥдырма}}
+* Amharic: {{t|am|አይስ ክሬም}}
+* Arabic: {{t|ar|بُوظَة|f}}, {{t|ar|آيْس كِرِيم|m}}, {{t|ar|مُثَلَّجَات|f-p}} {{t|ar|جِيلَاتِيّ|m}}, {{t|ar|دُنْدُرْمَة|f}}
+*: Egyptian Arabic: {{t|arz|أيس كريم|m|tr=áyes kerēm}}
+*: Gulf Arabic: {{t|afb|بريد|m|tr=barrīd}}, {{t|afb|برد|m|tr=barrid}}
+*: Hijazi Arabic: {{t|acw|آيسكريم|m|tr=āyskrīm}}, {{t|acw|أسْكِريم|m|tr=askirīm}}
+*: Iraqi Arabic: {{t|acm|موطة|f|tr=moṭa}}
+*: Moroccan Arabic: {{t|ary|جلاص|f|tr=glāṣ}}, {{t|ary|ڭلاص|f|tr=glāṣ}}
+*: North Levantine Arabic: {{t|apc|بوظة|f|tr=būẓa}}
+*: South Levantine Arabic: {{t|apc|بوظة|f|tr=būẓa}}
+* Aramaic:
+*: Assyrian Neo-Aramaic: {{t|aii|ܓܠܝܼܕܵܐ|tr=glīda|m}}
+* Armenian: {{t+|hy|պաղպաղակ}}, {{t|hy|մառոժնի}}
+* Assamese: {{t|as|আইচক্ৰিম}}
+* Asturian: {{t|ast|xeláu|m}}
+* Azerbaijani: {{t+|az|dondurma}}, {{t|az|marojna}} {{q|colloquial}}
+* Bashkir: {{t|ba|туңдырма}}
+* Basque: {{t|eu|izozkiak}}
+* Belarusian: {{t|be|маро́зіва|n}}, {{t|be|маро́жанае|n}}, {{t|be|лёды|p}}
+* Bengali: {{t|bn|আইসক্রীম}}, {{t|bn|মালাই বরফ}}
+* Bhojpuri: {{t|bho|मलाई बर्फ}}
+* Breton: {{t|br|skornenn|f}}
+* Bulgarian: {{t+|bg|сладоле́д|m}}
+* Burmese: {{t+|my|ရေခဲမုန့်}}
+* Carpathian Rusyn: {{t|rue|змерзли́на|f}}
+* Catalan: {{t+|ca|gelat|m}}
+* Cherokee: {{t|chr|[[ᎤᏅᏗ ᎤᏁᏍᏓᎳᏛ]]}}
+* Chinese:
+*: Cantonese: {{t+|yue|雪糕}}, {{t|yue|冰淇淋|tr=bing1 kei4 lam4-2}}
+*: Dungan: {{t|dng|бинҗилин}}
+*: Eastern Min: {{t|cdo|冰淇淋}}
+*: Hakka: {{t|hak|冰淇淋|tr=pîn-kî-lîn, pên-kî-lìn}}, {{t|hak|艾司庫淋|tr=ái-sṳ-khu-lím}}
+*: Hokkien: {{t+|nan-hbl|冰淇淋|tr=peng-kî-lîm}}, {{t|nan-hbl|冰糕|tr=peng-ko}}, {{t|nan-hbl|霜糕|tr=sng-ko}}, {{t|nan-hbl|弓蕉冰//芎蕉冰|tr=keng-chio-peng, kin-chio-peng}}, {{t|nan-hbl|弓蕉霜//芎蕉霜|tr=keng-chio-sng, kin-chio-sng}}, {{t|nan-hbl|雞卵冰|tr=ke-nn̄g-peng, koe-nn̄g-peng}}, {{t|nan-hbl|雪糕|tr=soat-ko}}, {{t|nan-hbl|牛奶冰|tr=gû-leng-peng, gû-ni-peng, gû-lin-peng}}
+*: Mandarin: {{t+|cmn|冰淇淋}}, {{t+|cmn|雪糕}}, {{t+|cmn|冰糕}}, {{t+|cmn|冰激凌}} {{qualifier|mainland China}}
+*: Wu: {{t|wuu|冰淇淋}}, {{t|wuu|冷飲}}
+* Chuvash: {{t|cv|сивлек}}
+* Cornish: {{t|kw|dehen rew|m}}
+* Crimean Tatar: {{t|crh|dondurma}}
+* Czech: {{t+|cs|zmrzlina|f}}
+* Danish: {{t+|da|is|c}}
+* Dutch: {{t+|nl|roomijs|n}}, {{t+|nl|ijs|n}}
+* Esperanto: {{t+|eo|glaciaĵo}}
+* Estonian: {{t+|et|jäätis}}
+* Faroese: {{t-needed|fo}}
+* Finnish: {{t+|fi|jäätelö}}
+* French: {{qualifier|Quebec}} {{t+|fr|crème glacée|f}}, {{qualifier|France}} {{t+|fr|glace|f}}
+* Gagauz: {{t|gag|dondurma}}
+* Galician: {{t+|gl|xeado|m}}
+* Georgian: {{t|ka|ნაყინი}}
+* German: {{t+|de|Eis|n}}, {{t+|de|Eiscreme|f}}, {{t+|de|Speiseeis|n}}
+*: Alemannic German: {{t|gsw|Glassee|n}}, {{t|gsw|Glasse|f}}
+* Greek: {{t+|el|παγωτό|n}}
+* Gujarati: {{t|gu|કુલ્ફેમલાઈ|f}}, {{t|gu|દૂધઠાર|m}}
+* Haitian Creole: {{t|ht|krèm}}
+* Hawaiian: {{t|haw|haukalima}}
+* Hebrew: {{t+|he|גְּלִידָה|f|tr=glidá}}
+* Hindi: {{t|hi|आइसक्रीम|m|tr=āiskrīm}}, {{t|hi|हिममलाई}}, {{t|hi|मलाईबर्फ़|f}}
+* Hungarian: {{t+|hu|fagylalt}}
+* Icelandic: {{t+|is|ís|m}}, {{t+|is|rjómaís|m}}
+* Ido: {{t+|io|glacio}}
+* Indonesian: {{t+|id|es krim}}, {{t|id|rumes}} {{qualifier|obsolete}}
+* Interlingua: {{t|ia|gelato}}
+* Irish: {{t|ga|reoiteog|f}}, {{t|ga|uachtar reoite|m}}
+* Italian: {{t+|it|gelato|m}}
+* Japanese: {{t+|ja|アイスクリーム|tr=aisukurīmu}}, {{t+|ja|アイス|tr=aisu}}, {{t+|ja|氷菓子|tr=こおりがし, kōrigashi}}
+* Javanese: {{t|jv|ès krim}}
+* Kabuverdianu: {{t|kea|jeladu}}
+* Kalmyk: {{t|xal|цардсн}}
+* Kannada: {{t|kn|ಐಸ್ ಕ್ರೀಮ್}}
+* Kazakh: {{t|kk|балмұздақ}}
+* Khmer: {{t|km|ការ៉េម}}
+* Komi:
+*: Komi-Zyrian: {{t|kpv|лымвый}}
+* Korean: {{t+|ko|아이스크림}}, {{t|ko|에스키모}} {{qualifier|genericized trademark, North Korea}}, {{t|ko|까까오}} {{qualifier|North Korea}}
+* Kurdish:
+*: Northern Kurdish: {{t+|kmr|bestenî|f}}, {{t+|kmr|dondirme}}
+* Kyrgyz: {{t+|ky|балмуздак}}, {{t+|ky|тоңдурма}}
+* Lao: {{t|lo|ກະແລັມ}}, {{t|lo|ກະແລມ}}
+* Latin: {{t|la|glaciēs edūlis|f}}
+* Latvian: {{t|lv|saldējums|m}}
+* Lithuanian: {{t|lt|ledai|m-p}}
+* Luxembourgish: {{t+|lb|Glace|f}}
+* Macedonian: {{t+|mk|сладолед|m}}
+* Malagasy: {{t+|mg|ranomandry}}
+* Malay: {{t+|ms|aiskrim}}
+* Malayalam: {{t|ml|ഐസ്‌ക്രീം}}
+* Maltese: {{t|mt|ġelat}}
+* Manx: {{t|gv|key riojey|m}}, {{t|gv|key riojit|m}}
+* Māori: {{t|mi|aihikirīmi}}
+* Marathi: {{t|mr|आइस्क्रीम}}
+* Marshallese: {{t|mh|aijkudiim̧}}
+* Moksha: {{t|mdf|эйня}}
+* Mongolian:
+*: Cyrillic: {{t+|mn|зайрмаг}}, {{t+|mn|мөхөөлдөс}}
+* Navajo: {{t|nv|abeʼ yistiní}}
+* Ndebele:
+*: Southern Ndebele: {{t|nr|i-ayisikhrimu}}
+* Northern Sotho: {{t|nso|aeskrimi}}
+* Norwegian:
+*: Bokmål: {{t+|nb|iskrem|m}}, {{t+|nb|is|m}}
+*: Nynorsk: {{t|nn|iskrem|m}}, {{t|nn|is|m}}
+* Old English: {{t|ang|īsrēam}}
+* Oriya: {{t|or|ଆଇସ୍କ୍ରିମ}}
+* Pannonian Rusyn: {{t|rsk|сладоляд|m}}
+* Pashto: {{t|ps|سړوپۍ|f|tr=saṛopǝy}}, {{t|ps|شېريخ|m|tr=širyax}}
+* Persian:
+*: Dari: {{t|prs|شِیرْیَخ}}, {{t|prs|آیْس کِرِیم}}
+*: Iranian Persian: {{t|fa-ira|بَسْتَنی}}
+* Plautdietsch: {{t|pdt|Iessschmaunt|m}}
+* Pohnpeian: {{t|pon|aiskurihm}}
+* Polish: {{t|pl|[[lód|lody]]|nv-p}}
+* Portuguese: {{qualifier|Portugal}} {{t+|pt|gelado|m}}, {{qualifier|Brazil}} {{t+|pt|sorvete|m}}
+* Punjabi: {{t|pa|ਆਈਸ ਕਰੀਮ|f}}
+* Romanian: {{t+|ro|înghețată|f}}
+* Romansh: {{t|rm|glatsch|m}}
+* Russian: {{t+|ru|моро́женое|n}}
+* Sami:
+*: Northern Sami: {{t|se|lákcajiekŋa}}
+* Samoan: {{t|sm|'aisakulimi}}
+* Sanskrit: {{t|sa|पयोहिम|n}}
+* Scottish Gaelic: {{t|gd|reòiteag|f}}, {{t|gd|reòtagan|m}}
+* Serbo-Croatian:
+*: Cyrillic: {{t|sh|сла̏доле̄д|m}}
+*: Latin: {{t+|sh|slȁdolēd|m}}
+* Sicilian: {{t|scn|jilatu}}
+* Sinhalese: {{t+|si|අයිස් ක්‍රීම්}}
+* Slovak: {{t|sk|zmrzlina|f}}
+* Slovene: {{t+|sl|sladolẹ̑d|m}}
+* Sorbian:
+*: Lower Sorbian: {{t|dsb|zmarzlina|f}}
+*: Upper Sorbian: {{t|hsb|zmjerzlina|f}}
+* Sotho: {{t|st|aesekerimi}}, {{t|st|lebejanapo}}
+* Spanish: {{t+|es|helado|m}}, {{qualifier|Mexico}} {{t+|es|nieve}}, {{t+|es|sorbete|m}} {{qualifier|El Salvador}}
+* Sundanese: {{t|su|és krim}}, {{t|su|éskrim}}, {{t|su|krim és}}
+* Swahili: {{t|sw|aiskrimu}}
+* Swazi: {{t|ss|i-ayisikhrimu}}
+* Swedish: {{t+|sv|glass|c}}
+* Sylheti: {{t|syl|ꠀꠁꠍꠇꠤꠞꠤꠝ}}
+* Tagalog: {{t+|tl|sorbetes}}, {{t|tl|ayskrim}}
+* Tajik: {{t+|tg|яхмос}}, {{t|tg|бастанӣ}}
+* Tamil: {{t|ta|ஐஸ் கிரீம்}}, {{t|ta|குளிர்களி}}, {{t+|ta|பனிக்கூழ்}}
+* Tatar: {{t|tt|туңдырма}}
+* Telugu: {{t|te|ఐస్ క్రీమ్}}
+* Thai: {{t+|th|ไอศกรีม}}, {{t+|th|ไอติม}}
+* Tibetan: {{t|bo|ཁྱགས་པ་མངར་མོ}}, {{t|bo|འཁྱགས་པ་བྱི་རིལ}}, {{t|bo|འཁྱག་སྤྲི}}, {{t|bo|འཁྱགས་ཞོ}}
+* Tigrinya: {{t|ti|ኣይስክሪም}}
+* Tsonga: {{t|ts|ayisikhirimu}}
+* Tswana: {{t|tn|bebetsididi}}
+* Turkish: {{t+|tr|dondurma}}, {{t|tr|buzkaymak}}
+*: Ottoman Turkish: {{t|ota|طوڭدرمه|tr=doñdurma}}
+* Turkmen: {{t|tk|doňdurma}}
+* Ukrainian: {{t+|uk|моро́зиво|n}}, {{t|uk|моро́жене|n}}
+* Urdu: {{t|ur|آئِس کِرِیم|m}}
+* Uyghur: {{t|ug|ماروژنا}}, {{t|ug|ماروژنى}}
+* Uzbek: {{t+|uz|muzqaymoq}}, {{t+|uz|muzday}}, {{t+|uz|morojniy}}
+* Venda: {{t|ve|ayisikhirimu}}
+* Veps: {{t|vep|jähine}}
+* Vietnamese: {{t+|vi|kem}}
+* Welsh: {{t+|cy|hufen iâ}}
+* Winnebago: {{t|win|nųųxgisu}}
+* Xhosa: {{t|xh|iayisikhrim}}
+* Yiddish: {{t|yi|אײַזקרעם|m}}, {{t|yi|מאַראָזשענע|f}}, {{t|yi|ליאָדעס|p}}
+* Yoruba: {{t|yo|áísìkiriìmù}}
+* Zulu: {{t|zu|u-ayisikhilimu|c1a|c2a}}
+{{trans-bottom}}
+
+{{trans-top|as a portion}}
+* Afrikaans: {{t|af|draairoomys}}, {{t|af|draairoomyse|p}}, {{t+|af|roomys}}, {{t|af|roomyse|p}}
+* Albanian: {{t+|sq|akullore}}
+* Armenian: {{t+|hy|պաղպաղակ}}
+* Azerbaijani: {{t+|az|dondurma}}
+* Catalan: {{t|ca|carapulla|f}}
+* Chinese:
+*: Mandarin: {{t+|cmn|甜筒|tr=tiántǒng}}
+* Chuvash: {{t|cv|сивлек}}
+* Czech: {{t+|cs|zmrzlina|f}}, {{t+|cs|nanuk|m}} {{qualifier|on a stick}}
+* Danish: {{t+|da|isvaffel|c}}, {{t+|da|vaffelis|c}}
+* Dutch: {{t+|nl|ijsje|n}}, {{t+|nl|ijsco}}
+* Finnish: {{t+|fi|jäätelö}}
+* French: {{t+|fr|glace|f}}
+* Galician: {{t+|gl|cornete|m}}
+* German: {{t+|de|Eis|n}}
+* Greek: {{t|el|[[παγωτό]] [[χωνάκι]]|n}}
+* Hebrew: {{t|he|גָּבִיעַ גְּלִידָה|tr=gavía glidá}}
+* Hungarian: {{t+|hu|jégkrém}} {{qualifier|on a stick}}, {{t+|hu|fagylalt}} {{qualifier|in a cup or cone}}, {{t+|hu|fagyi}} {{qualifier|colloquial}}
+* Icelandic: {{t|is|ís í brauði}}, {{t|is|ís í brauðformi}}
+* Irish: {{t|ga|reoiteog}}, {{t|ga|uachtar reoite}}
+* Japanese: {{t+|ja|アイスクリーム|tr=aisukurīmu}}
+* Kalmyk: {{t|xal|цардсн}}
+* Lao: {{t|lo|ກະແລັມ}}, {{t|lo|ກະແລມ}}
+* Macedonian: {{t+|mk|сладолед|m}}
+* Marshallese: {{t|mh|aijkudiim̧}}
+* Polish: {{t+|pl|lód|m-in}}
+* Portuguese: {{t|pt|casquinha|f}} {{qualifier|Brazil}}
+* Romanian: {{t+|ro|înghețată|f}}
+* Russian: {{t+|ru|моро́женое|n}}
+* Sanskrit: {{t|sa|पयोहिम|n}}
+* Sicilian: {{t|scn|jilatu}}
+* Spanish: {{t+|es|cucurucho|m}}
+* Swedish: {{t+|sv|glasstrut|c}}, {{t|sv|strutglass|c}}
+* Thai: {{t+|th|ไอศกรีม}}, {{t+|th|ไอติม}}
+* Turkish: {{t+|tr|dondurma}},  {{t|tr|buzkaymak}}, {{t|tr|ambarbuz}} (''dialectal'')
+{{trans-bottom}}
+
+{{checktrans-top}}
+* Samogitian: {{t-check|sgs|ledā}}
+* Sicilian: {{t-check|scn|jilatu}}
+* Sundanese: {{t-check|su|éskrim}}
+{{trans-bottom}}
+
+===See also===
+* {{pedia}}
+
+{{C|en|Ice cream}}

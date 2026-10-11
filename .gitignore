@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+*.ankiaddon
+.mypy_cache/
+.pytest_cache/
+src/anki_ipa/meta.json
+src/anki_ipa/user_files/*
+!src/anki_ipa/user_files/README.txt

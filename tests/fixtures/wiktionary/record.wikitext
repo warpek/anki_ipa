@@ -1,0 +1,707 @@
+{{also|Record|récord|rècord}}
+==English==
+{{wp}}
+
+===Etymology 1===
+{{ety|en|id=noun|:inh|enm:recorde<ety:bor<fro:record<ety:deverbal<recorder>>>>|tree=+|text=+3}} See {{l|en|record|below|id=verb}}.
+
+====Pronunciation====
+* {{enPR|rĕkʹôrd|a=RP}}, {{IPA|en|/ˈɹɛk.ɔːd/}}
+* {{enPR|rĕkʹərd|rĕkʹôrd|a=GA}}, {{IPA|en|/ˈɹɛk.ɚd/|/ˈɹɛk.ɔɹd/}}
+** {{audio|en|en-us-record-noun.ogg|a=US}}
+* {{rhyme|en|ɛkɔː(ɹ)d|ɛkə(ɹ)d|s=2}}
+* {{hyph|en|rec|ord}}
+
+====Noun====
+{{en-noun}}
+
+# An item of [[information]] put into a temporary or permanent physical [[medium]].
+#: {{ux|en|The person had a '''record''' of the interview so she could review her notes.}}
+#: {{ux|en|The tourist's photographs and the tape of the police call provide a '''record''' of the crime.}}
+#* {{quote-journal
+|en
+|year=2012
+|month=March-April
+|author=John T. Jost
+|title=Social Justice: Is It in Our Nature (and Our Future)?
+|volume=100
+|issue=2
+|page=162
+|magazine=w:American Scientist
+|url=http://www.americanscientist.org/bookshelf/pub/social-justice-is-it-in-our-nature-and-our-future
+|passage=He draws eclectically on studies of baboons, descriptive anthropological accounts of hunter-gatherer societies and, in a few cases, the fossil '''record'''.
+|accessdate=19 May 2013
+|archiveurl=https://web.archive.org/web/20120213062813/http://www.americanscientist.org/bookshelf/pub/social-justice-is-it-in-our-nature-and-our-future
+|archivedate=13 February 2012
+}}
+# Any instance of a physical medium on which information was put for the purpose of preserving it and making it available for future reference.
+#: {{syn|en|log}}
+#: {{ux|en|We have no '''record''' of you making this payment to us.}}
+#: {{ux|en|My remarks were struck from the '''record'''.}}
+# {{ellipsis of|en|phonograph record|t=a [[disc]], usually made from [[vinyl]], on which sound is recorded and may be replayed on a [[phonograph]]}}.
+#: {{syn|en|disc|phonograph record|vinyl}}
+#: {{ux|en|I still like '''records''' better than CDs.}}
+#* {{quote-song|en|title=Record Doctor|year=2012|artist={{w|Saint Etienne (band)|Saint Etienne}}|passage=He's the '''record''' doctor / Tell him your woes / He'll reach in his bag / And he'll give you a dose}}
+## {{lb|en|by extension|informal}} A music [[album]]; broadly, any music released as a single, EP, etc.
+# {{lb|en|computing}} A set of [[data]] relating to a single individual or item.
+#: {{ux|en|Pull up the '''record''' on John Smith. What's his medical history?}}
+# {{lb|en|data structure}} A [[data structure]] similar to a [[struct]], in some [[programming language]]s such as [[C#]] and [[Java]] based on [[class]]es and designed for storing [[immutable]] [[data]].
+#: {{cot|en|struct|enumeration}}
+#* {{quote-book|en|author=Elliot B. Koffman|title=Pascal: Problem Solving and Program Design|year=1989|publisher=Addison-Wesley|page=406|pageurl=https://books.google.com/books?id=dBUiAQAAIAAJ&q=%22record%22+pascal&dq=%22record%22+pascal&hl=&cd=3&source=gbs_api|isbn=978-0-201-11834-6|passage=This chapter examines another data structure, the '''record''' (available in Pascal but not in all other high-level languages). '''Records''' make it easier to organize and represent information in Pascal, a major reason for the popularity of the Pascal{{...}}}}
+#* {{quote-book|en|author=Ian F. Darwin|title=Java Cookbook|year=2020|publisher=O'Reilly Media|page=232|pageurl=https://books.google.com/books?id=H9PXDwAAQBAJ&pg=PA232&dq=%22record%22+type+Java&hl=&cd=9&source=gbs_api#v=onepage&q=%22record%22%20type%20Java&f=false|isbn=978-1-4920-7255-3|passage=The new '''record''' type provides another solution. A '''record''' is a class-like construct for data classes, a restricted form of class like enums and annotations.}}
+#* {{quote-book|en|author=Joseph Albahari|title=C# 9.0 in a Nutshell|year=2021|publisher=O'Reilly Media|pageurl=https://books.google.com/books?id=uUwgEAAAQBAJ&pg=PA210&dq=%22record%22+C#&hl=&cd=15&source=gbs_api#v=onepage&q=%22record%22%20C#&f=false|isbn=978-1-0981-0093-3|page=210|passage=A '''record''' is a special kind of class that's designed to work well with immutable (readonly) data.}}
+# The most extreme known value of some variable, particularly that of an [[achievement]] in competitive events.
+#: {{ux|en|The heat and humidity were both new '''records'''.}}
+#: {{ux|en| Australia set a '''record''' of 10 back-to-back T20I wins.}}
+#: {{ux|en| He broke the '''record''' for the youngest English captain.}}
+#: {{ux|en|The team set a new '''record''' for most points scored in a game.}}
+#* {{quote-journal|en|date=2023 April 5|title=Network News: Conservatives accused of "rewarding Avanti's failure"|journal=RAIL|issue=980|page=6|text="Avanti has literally broken '''records''' over the last six months for delays and cancellations, and the Conservatives' answer is to reward failure with millions more in taxpayer cash," said Labour Shadow Transport Secretary Louise Haigh.}}
+
+=====Hyponyms=====
+{{col4|en|activation record
+|broken record
+|data record
+|public record
+|world record
+}}
+
+=====Derived terms=====
+{{col2|en|record holder|record keeping|record store
+|activation record|extract from the judicial record
+|address of record
+|attorney record|race record
+|broken record|gramophone record|master boot record
+|business record
+|change the record|in record time
+|court of record
+|criminal record
+|data record|principal record
+|for the record|record man|unit record
+|fossil record
+|glue record
+|gold record
+|golden record
+|lap record
+|matter of record
+|medical record
+|of record
+|on record
+|off the record
+|on the record
+|personal record
+|phonograph record
+|police record
+|production record
+|public record
+|put the record straight
+|record book
+|record-breaker
+|record-breaking
+|record changer
+|record chart
+|record communication
+|record company
+|record deal
+|record-holder
+|record hop
+|record keeper
+|recordkeeper
+|record label
+|record locator
+|record player
+|record set
+|record-setting
+|record shop
+|record sleeve
+|rock record
+|set the record straight
+|stock of record
+|stuck record
+|track record
+|vinyl record
+|world record
+|written record
+|attorney of record|go on record|memo for record|memo for the record|memorandum for record|memorandum for the record|off record|off-the-record|record producer|record-keeping|record-set|service record|microrecord|palaeorecord|paleorecord|phonorecord|recordholder|recordholding|recordist|Recordite|recordkeeping|recordless|recordlike|recordset|recordwise}}
+
+=====Descendants=====
+* {{desc|pt|recorde|bor=1}}
+* {{desc|ta|ரெக்கார்டு|bor=1}}
+
+=====Translations=====
+{{trans-top|information put into a lasting physical medium}}
+* Albanian: {{t+|sq|shënim|m}}
+* Arabic: {{t|ar|تَسْجِيل|m}}, {{t|ar|مُدَوَّنَة|f}}, {{t|ar|تَدْوِين|m}}, {{t|ar|قَيْد|m}}
+* Armenian: {{t+|hy|գրառում}}
+* Azerbaijani: {{t+|az|qeyd}}, {{t+|az|yazı}}
+* Belarusian: {{t|be|за́піс|m}}
+* Bulgarian: {{t+|bg|за́пис|m}}
+* Catalan: {{t|ca|enregistrament|m}}, {{t+|ca|registre|m}}
+* Chinese:
+*: Cantonese: {{t|yue|紀錄}}, {{t|yue|記錄}}
+*: Mandarin: {{t+|cmn|紀錄|tr=jìlù}}, {{t+|cmn|記錄|tr=jìlù}}
+* Czech: {{t+|cs|záznam|m}}
+* Danish: {{t|da|optegnelse|c}}, {{t+|da|dokument|n}}
+* Dutch: {{t+|nl|verslag|n}}
+* Esperanto: {{t|eo|registri}}
+* Estonian: {{t+|et|kirje}}
+* Finnish: {{t+|fi|tallenne}}
+* French: {{t+|fr|enregistrement|m}}
+* Georgian: {{t|ka|ჩანაწერი}}
+* German: {{t+|de|Aufzeichnung|f}}, {{t+|de|Aufnahme|f}}, {{t+|de|Eintrag|m}}
+* Greek: {{t+|el|εγγραφή|f}}, {{t+|el|καταγραφή|f}}
+* Hebrew: {{t+|he|עֵרֶךְ|m|tr=érekh}}
+* Hindi: {{t+|hi|अभिलेख|m}}, {{t+|hi|इतिवृत्त|m}}
+* Hungarian: {{q|recording}} {{t+|hu|felvétel}}, {{q|note}} {{t+|hu|feljegyzés}}, {{q|register, archives}} {{t+|hu|nyilvántartás}}
+* Icelandic: {{t+|is|skrá|f}}, {{t+|is|skýrsla|f}}, {{t+|is|heimild|f}}, {{t|is|menjar|f}}
+* Irish: {{t|ga|taifead|m}}, {{t|ga|cuntas|m}}, {{t|ga|tuairisc|f}}
+* Italian: {{t+|it|registrazione|f}}, {{t+|it|record|m}}
+* Japanese: {{t+|ja|記録|tr=きろく, kiroku}}, {{t+|ja|レコード|tr=rekōdo}}
+* Kazakh: {{t|kk|жазба}}
+* Korean: {{t+|ko|기록(記錄)}}, {{t+|ko|레코드}}
+* Latvian: {{t|lv|ieraksts|m}}
+* Lithuanian: {{t+|lt|įrašas|m}}
+* Macedonian: {{t|mk|запис|m}}
+* Malay: {{t+|ms|rakaman}}
+* Māori: {{t|mi|mauhanga}}
+* Norwegian:
+*: Bokmål: {{t|nb|opptegnelse|m}}
+* Persian:
+*: Iranian Persian: {{t+|fa-ira|ثَبْت}}
+* Polish: {{t+|pl|zapis|m}}, {{t+|pl|wpis|m}}
+* Portuguese: {{t+|pt|registro|m}} {{q|Brazil}}, {{t+|pt|registo|m}} {{q|Portugal}}
+* Romanian: {{t+|ro|înregistrare|f}}
+* Russian: {{t+|ru|за́пись|f}}
+* Serbo-Croatian:
+*: Cyrillic: {{t|sh|за́пис|m}}, {{t|sh|сни̑мка|f}}, {{t|sh|сни̏мак|m}}
+*: Latin: {{t+|sh|zápis|m}}, {{t+|sh|snȋmka|f}}, {{t+|sh|snȉmak|m}}
+* Sicilian: {{t|scn|riggistrazziuni|f}}
+* Slovak: {{t|sk|záznam|m}}
+* Slovene: {{t|sl|zapis|m}}
+* Spanish: {{t|es|récor|m}} {{qualifier|Latin America}}
+* Swahili: {{t+|sw|rekodi}}
+* Swedish: {{t|sv|nerteckning|c}}, {{t+|sv|inspelning|c}}
+* Tajik: {{t+|tg|сабт}}, {{t|tg|қайд}}
+* Thai: {{t+|th|บันทึก}}
+* Turkish: {{t+|tr|kayıt}}, {{t+|tr|belge}}, {{t+|tr|tescil}}
+*: Ottoman Turkish: {{t|ota|جریده|tr=ceride}}
+* Ukrainian: {{t|uk|за́пис|m}}
+* Vietnamese: {{t+|vi|bản ghi}}
+* Welsh: {{t+|cy|cofnod|m}}
+{{trans-bottom}}
+
+{{trans-top|phonograph record}}
+* Albanian: {{t+|sq|pllakë|f}}, {{t+|sq|disk|m}}
+* Arabic: {{t+|ar|أُسْطُوَانَة|f}}
+* Armenian: {{t+|hy|ձայնապնակ}}
+* Azerbaijani: {{t|az|plastinka}}
+* Belarusian: {{t|be|пласці́нка|f}}, {{t|be|дыск|m}}, {{t|be|грампласці́нка|f}}
+* Bulgarian: {{t+|bg|пло́ча|f}}
+* Burmese: {{t+|my|ဓာတ်ပြား}}
+* Catalan: {{t|ca|enregistrament|m}}
+* Cherokee: {{t|chr|ᎠᏠᏗ}}
+* Chinese:
+*: Cantonese: {{t|yue|唱片|tr=coeng3 pin3-2}}, {{t|yue|黑膠唱片|tr=hak1 gaau1 coeng3 pin3-2}}
+*: Mandarin: {{t+|cmn|唱片|tr=chàngpiàn}}, {{t+|cmn|黑膠唱片|tr=hēijiāo chàngpiàn}}, {{t+|cmn|片子|tr=piānzi}}
+* Czech: {{t+|cs|deska|f}}
+* Danish: {{t|da|plade|c}}, {{t+|da|grammofonplade|c}}
+* Dutch: {{t+|nl|plaat|f}}, {{t+|nl|grammofoonplaat|f}}
+* Finnish: {{t+|fi|äänilevy}}, {{t+|fi|levy}}
+* French: {{t+|fr|disque|m}}
+* Georgian: {{t|ka|ფირფიტაზე ჩანაწერი}}, {{t|ka|გრამფირფიტა}}
+* German: {{t+|de|Schallplatte|f}}
+* Greek: {{t+|el|δίσκος|m}}, {{t+|el|βινύλιο|n}}
+* Hebrew: {{t+|he|תַּקְלִיט|m|tr=taklít}}
+* Hindi: {{t|hi|रिकॉर्ड|m}}, {{t+|hi|तबकड़ी}}
+* Hungarian: {{t+|hu|lemez}}, {{t+|hu|hanglemez}}
+* Icelandic: {{t+|is|plata|f}}, {{t+|is|hljómplata|f}}
+* Irish: {{t|ga|ceirnín|m}}
+* Italian: {{t+|it|disco|m}}
+* Japanese: {{t+|ja|レコード|tr=rekōdo}}, {{t+|ja|音盤|tr=おんばん, onban}}
+* Kazakh: {{t+|kk|табақ}}, {{t|kk|граммофон табағы}}
+* Khmer: {{t|km|ថាលសព្ទ}}, {{t+|km|ថាស}}
+* Korean: {{t+|ko|레코드}}, {{t+|ko|음반(音盤)}}
+* Kyrgyz: {{t|ky|граммофон пластинкасы}}, {{t|ky|пластинка}}
+* Lao: {{t|lo|ແຜ່ນສຽງ}}, {{t|lo|ຈານສຽງ}}
+* Latvian: {{t|lv|skaņuplate|f}}
+* Lithuanian: {{t+|lt|diskas|m}}, {{t|lt|plokštelė|f}}
+* Macedonian: {{t+|mk|плоча|f}}
+* Malay: {{t+|ms|piring hitam}}
+* Māori: {{t|mi|rekoata}}
+* Mongolian:
+*: Cyrillic: {{t+|mn|пянз}}
+* Norwegian:
+*: Bokmål: {{t+|nb|plate|m|f}}, {{t|nb|grammofonplate|m|f}}
+* Persian:
+*: Dari: {{t|prs|رِیکَارْد}}
+*: Iranian Persian: {{t|fa-ira|صَفْحِهٔ گِرامافون}}, {{t|fa-ira|صَفْحِه}}, {{t|fa-ira|صَفْحِهٔ وینیل|tr=safhe-ye vinil}}
+* Plautdietsch: {{t|pdt|Gramafoonschiew|f}}
+* Polish: {{t+|pl|płyta|f}}, {{t+|pl|płyta gramofonowa|f}}, {{t+|pl|analog|m}} {{qualifier|colloquial}}
+* Portuguese: {{t+|pt|vinil|m}}
+* Romanian: {{t+|ro|disc|n}}, {{t|ro|disc-audio|n}}, {{t+|ro|placă|f}} {{q|informal}}
+* Russian: {{t+|ru|пласти́нка|f}}, {{t+|ru|грампласти́нка|f}}, {{t|ru|[[граммофонный|граммофо́нная]] [[пласти́нка]]|f}}, {{t+|ru|диск|m}}
+* Serbo-Croatian:
+*: Cyrillic: {{t|sh|пло̏ча|f}}
+*: Latin: {{t+|sh|plȍča|f}}
+* Sicilian: {{t|scn|discu|m}}
+* Slovak: {{t|sk|platňa|f}}
+* Slovene: {{t+|sl|plošča|f}}
+* Spanish: {{t|es|vinilo|m}}, {{t|es|[[disco]] [[de]] [[vinilo]]|m}}
+* Swahili: {{t|sw|sahani ya santuri}}
+* Swedish: {{t+|sv|skiva|c}}, {{t+|sv|platta|c}}
+* Tagalog: {{t|tl|plaka}}
+* Tajik: {{t|tg|қартаи граммофон}}, {{t|tg|сафҳаи граммофон}}, {{t|tg|қарта}}, {{t+|tg|сафҳа}}
+* Thai: {{t+|th|แผ่นเสียง}}, {{t+|th|จานเสียง}}
+* Turkish: {{t+|tr|plak}}
+* Ukrainian: {{t|uk|пласти́нка|f}}, {{t+|uk|диск|m}}, {{t|uk|грампласти́нка|f}}
+* Urdu: {{t|ur|رِکارْڈ|m}}
+* Uzbek: {{t+|uz|gramplastinka}}, {{t+|uz|plastinka}}
+* Vietnamese: {{t|vi|đĩa than}}, {{t|vi|đĩa hát}}, {{t|vi|đĩa nhạc}}, {{t+|vi|đĩa}}
+* Welsh: {{t+|cy|record|f}}
+{{trans-bottom}}
+
+{{trans-top|computing: set of data relating to a single individual or item}}
+* Arabic: {{t+|ar|سِجِلّ|m}}, {{t|ar|دَفْتَر|m}}
+* Belarusian: {{t|be|за́піс|m}}
+* Bulgarian: {{t+|bg|за́пис|m}}
+* Chinese:
+*: Cantonese: {{t|yue|記錄}}
+*: Mandarin: {{t+|cmn|記錄|tr=jìlù}}
+* Czech: {{t+|cs|záznam|m}}
+* Danish: {{t+|da|post|c}}
+* Finnish: {{t+|fi|tietue}}
+* French: {{t+|fr|enregistrement|m}}
+* German: {{t+|de|Datensatz|m}}
+* Greek: {{t+|el|εγγραφή|f}}, {{t+|el|καταχώρηση|f}}
+* Hebrew: {{t+|he|רְשׁוּמָה|f|tr=reshumâ}}
+* Hungarian: {{t+|hu|rekord}}
+* Icelandic: {{t|is|færsla|f}}
+* Japanese: {{t+|ja|記録|tr=きろく, kiroku}}
+* Korean: {{t+|ko|기록(記錄)}}
+* Lithuanian: {{t+|lt|įrašas|m}}
+* Māori: {{t|mi|pūkete}}
+* Polish: {{t+|pl|rekord|m}}
+* Portuguese: {{t+|pt|registro|m}} {{q|Brazil}}, {{t+|pt|registo|m}} {{q|Portugal}}
+* Romanian: {{t+|ro|înregistrare|f}}
+* Russian: {{t+|ru|за́пись|f}}
+* Serbo-Croatian:
+*: Cyrillic: {{t|sh|за́пис|m}}, {{t|sh|сло̏г|m}}
+*: Latin: {{t+|sh|zápis|m}}, {{t+|sh|slȍg|m}}
+* Spanish: {{t+|es|registro|m}}
+* Swahili: {{t+|sw|rekodi}}
+* Swedish: {{t+|sv|post|c}}
+* Turkish: {{t+|tr|kayıt}}
+* Ukrainian: {{t|uk|за́пис|m}}
+{{trans-bottom}}
+
+{{trans-top|programming: kind of data type}}
+* Finnish: {{t+|fi|tietue}} {{q|if distinct from structs, the latter are called [[arvoluokka]]}}
+{{trans-bottom}}
+
+{{trans-top|most extreme known value of some achievement}}
+* Afrikaans: {{t+|af|rekord}}
+* Arabic: {{t|ar|رَقْم قِيَاسِيّ|m}}
+* Belarusian: {{t|be|рэко́рд|m}}
+* Bulgarian: {{t+|bg|реко́рд|m}}
+* Chinese:
+*: Mandarin: {{t+|cmn|紀錄|tr=jìlù}}, {{t|cmn|[[最]][[高]][[記錄]]|tr=zuìgāo jìlù}}, {{t|cmn|[[最]][[好]][[成績]]|tr=zuìhǎo chéngjì}}
+* Czech: {{t+|cs|rekord|m}}
+* Danish: {{t|da|rekord|c}}
+* Dutch: {{t+|nl|record|n}}
+* Esperanto: {{t|eo|rekordo}}
+* Finnish: {{t+|fi|ennätys}}
+* French: {{t+|fr|record|m}}
+* Georgian: {{t|ka|რეკორდი}}
+* German: {{t+|de|Rekord|m}}, {{t+|de|Höchstleistung|f}}, {{t+|de|Bestleistung|f}}
+* Greek: {{t+|el|ρεκόρ|n}}, {{t|el|ανώτατη επίδοση|f}}
+* Hindi: {{t|hi|कीर्तिमान|m}}
+* Hungarian: {{t+|hu|csúcs}}, {{t+|hu|rekord}}
+* Icelandic: {{t+|is|met|n}}
+* Indonesian: {{t+|id|rekor}}
+* Irish: {{t|ga|curiarracht|m}}
+* Italian: {{t+|it|primato|m}}, {{t+|it|record|m}}
+* Japanese: {{t|ja|[[最高]][[記録]]|tr=さいこうきろく, saikō kiroku}}, {{t+|ja|成績|tr=せいせき, seiseki}}
+* Kazakh: {{t|kk|рекорд}}
+* Korean: {{t+|ko|기록(紀錄)}}, {{t|ko|[[최고]] [[기록]](最高紀錄)}}
+* Latvian: {{t|lv|rekords|m}}
+* Lithuanian: {{t|lt|rekordas|m}}
+* Macedonian: {{t|mk|рекорд|m}}
+* Malay: {{t+|ms|rekod}}
+* Norwegian:
+*: Bokmål: {{t+|nb|rekord|m}}
+*: Nynorsk: {{t|nn|rekord|m}}
+* Persian:
+*: Iranian Persian: {{t|fa-ira|رِکُوْرْد}}
+* Polish: {{t+|pl|rekord|m}}
+* Portuguese: {{t+|pt|recorde|m}}
+* Romanian: {{t+|ro|record|n}}
+* Russian: {{t+|ru|реко́рд|m}}
+* Serbo-Croatian:
+*: Cyrillic: {{t|sh|рѐкорд|m}}
+*: Latin: {{t+|sh|rèkord|m}}
+* Sicilian: {{t|scn|primatu|m}}, {{t|scn|record|m}}
+* Slovak: {{t|sk|rekord|m}}
+* Slovene: {{t|sl|rekord|m}}
+* Spanish: {{t+|es|récord|m}}, {{t|es|plusmarca|f}}
+* Swahili: {{t+|sw|rekodi}}
+* Swedish: {{t+|sv|rekord|n}}
+* Turkish: {{t+|tr|rekor}}
+* Ukrainian: {{t|uk|реко́рд|m}}
+* Vietnamese: {{t+|vi|kỉ lục}}
+* Welsh: {{t+|cy|record|f}}
+{{trans-bottom}}
+
+====Adjective====
+{{en-adj|-}}
+
+# {{lb|en|attributive}} Enough to break previous records and set a new one; [[world-class]]; [[historic]].
+#: {{syn|en|record-breaking|record-setting}}
+#* {{quote-text|en|year=1952|author=C. S. Lewis|title=The Voyage of the Dawn Treader
+|passage="But it's far worse for me," said Edmund, "because you'll at least have a room of your own and I shall have to share a bedroom with that '''record''' stinker, Eustace."}}
+
+=====Translations=====
+{{trans-top}}
+* Arabic: {{t|ar|قِيَاسِيّ}}
+* Bulgarian: {{t+|bg|реко́рден}}
+* Finnish: {{t+|fi|ennätyksellinen}}
+* French: {{t+|fr|record}}
+* Polish: {{t+|pl|rekordowy}}
+* Portuguese: {{t+|pt|recorde}}
+* Romanian: {{t+|ro|record}}
+* Russian: {{t+|ru|реко́рдный}}
+{{trans-bottom}}
+
+===Etymology 2===
+{{ety|en|id=verb|:inh|enm:recorden<ety:bor<fro:recorder<t:to register, to recall>>>|tree=+}}
+From {{inh|en|enm|recorden}}, borrowed from {{der|en|fro|recorder||to register, to recall}}, from {{der|en|la|recordor|recordārī|t=remember, call to mind}}, from {{m|la|re-||back, again}} + {{m|la|cor||heart; mind}}.
+
+====Pronunciation====
+* {{IPA|en|/ɹɪˈkɔːd/|/ɹə-/|a=RP}}
+* {{enPR|rĭ-kôrdʹ|a=GA}}, {{IPA|en|/ɹɪˈkɔɹd/}}
+* {{audio|en|en-us-record-verb.ogg|a=US|pos=verb}}
+* {{rhymes|en|ɔː(ɹ)d|s=2}}
+* {{hyph|en|re|cord}}
+
+====Verb====
+{{en-verb}}
+
+# {{lb|en|transitive}} To make a record of information.
+#: {{ux|en|I wanted to '''record''' every detail of what happened, for the benefit of future generations.}}
+#* {{quote-web
+|en
+|date=September 7, 2012
+|author=Phil McNulty
+|title=Moldova 0-5 England
+|work=BBC Sport
+|url=http://www.bbc.co.uk/sport/0/football/19460608
+|page=
+|passage=The display and result must be placed in the context that was it was against a side that looked every bit their Fifa world ranking of 141 - but England completed the job with efficiency to '''record''' their biggest away win in 19 years.}}
+# {{lb|en|transitive}} To make an [[audio]] or [[video]] [[recording]] of.
+#: {{syn|en|catch}}
+#: {{ux|en|Within a week they had '''recorded''' both the song and the video for it.}}
+#* {{quote-journal|en|title=UK cinemas ban Google glasses over piracy risk|work=w:The Independent|author=Adam Sherwin|date=29 June 2014|url=http://www.independent.co.uk/life-style/gadgets-and-tech/news/uk-cinemas-ban-google-glasses-over-piracy-risk-9570686.html|passage=However, the ability to '''record''' people without their knowledge, with the stroke of a finger over the spectacle frame or a voice command, has prompted privacy concerns.}}
+# {{lb|en|transitive|legal}} To give legal status to by making an official public record.
+#: {{ux|en|When the deed was '''recorded''', we officially owned the house.}}
+# {{lb|en|intransitive}} To fix in a medium, usually in a tangible medium.
+# {{lb|en|intransitive}} To make an audio, video, or multimedia recording.
+# {{lb|en|transitive|intransitive|obsolete}} To repeat; to practice.
+# {{lb|en|ambitransitive|obsolete}} To sing or repeat a tune.
+#* '''1595''', {{w|George Peele}}, ''[[w:The Old Wives' Tale (play)|The Old Wives’ Tale]]'', The Malone Society Reprints, 1908, lines 741-742,<sup>[https://archive.org/details/oldwivestale00peeluoft]</sup>
+#*: Come ''Berecynthia'', let vs in likewise,
+#*: And heare the Nightingale '''record''' hir notes.
+#* {{quote-book|en|year=1600|translator=w:Edward Fairfax|title={{w|Jerusalem Delivered|Godfrey of Bulloigne, or The Recouerie of Ierusalem}}|author=Torquato Tasso|location=London|publisher=I. Iaggard and M. Lownes|section=Book 2, p. 39|url=http://name.umdl.umich.edu/A68799.0001.001
+|passage=They long’d to see the day, to heare the larke<br>'''Record''' her hymnes and chant her carols blest,}}
+#* {{RQ:Shakespeare Pericles|IV|Prologue|text={{...}} to the lute<br>She sung, and made the night-bird mute,<br>That still '''records''' with moan;}}
+#* {{quote-text|en|year=1616|author={{w|William Browne (poet)|William Browne}}|title=Britannia’s Pastorals|location=London|publisher=John Haviland|year_published=1625|section=Book 2, Song 4, p. 129|url=http://name.umdl.umich.edu/A17042.0001.001
+|passage={{...}} the ''Nymph'' did earnestly contest<br>Whether the Birds or she '''recorded''' best {{...}}}}
+# {{lb|en|obsolete}} To reflect; to ponder.
+#* {{RQ:Fuller Church History|section=3|page=204|text={{...}} he was {{...}} carried to the Scaffold on the ''Tower-hill'' {{...}}, himself praying all the way, and '''recording''' upon the words which he before had read.}}
+
+=====Antonyms=====
+* {{antsense|make a record of information}} {{l|en|erase}}
+* {{antsense|make an audio or video recording of}} {{l|en|erase}}
+
+=====Derived terms=====
+{{col|en|audiorecord|over-record|self-recording|telerecord|underrecord|unrecord|videorecord|prerecord|recordability|recordee|misrecord|re-record|pre-record|recordable|recordal|recordance|recordation|recorder|recording|rerecord|tape-record|unrecorded}}
+
+=====Translations=====
+{{trans-top|make a record of}}
+* Arabic: {{t+|ar|سَجَّلَ}}
+*: Egyptian Arabic: {{t|arz|سجل|tr=saggil}}
+* Armenian: {{t+|hy|գրառել}}, {{t+|hy|գրանցել}}
+* Belarusian: {{t|be|запі́сваць|impf}}, {{t|be|запіса́ць|pf}}
+* Bulgarian: {{t+|bg|записвам}}
+* Chinese:
+*: Mandarin: {{t+|cmn|錄|tr=lù}}
+* Czech: {{t+|cs|zaznamenat}}
+* Danish: {{t|da|optegne}}, {{t|da|registrere}}
+* Dutch: {{t+|nl|optekenen}}
+* Esperanto: {{t|eo|noti}}
+* Finnish: {{t+|fi|tallentaa}}, {{t|fi|taltioida}}, {{t+|fi|merkitä}}
+* French: {{t+|fr|enregistrer}}
+* Georgian: {{t|ka|იწერს}}, {{t|ka|ჩაიწერს}}
+* German: {{t+|de|eintragen}}, {{t+|de|protokollieren}}, {{t+|de|aufzeichnen}}
+* Greek: {{t+|el|καταγράφω}}, {{t+|el|αναγράφω}}
+*: Ancient Greek: {{t|grc|ἀναγράφω}}
+* Hebrew: {{t+|he|רִשּׁוּם|m|tr=rishum}}
+* Hungarian: {{t+|hu|feljegyez}}, {{t+|hu|rögzít}}
+* Irish: {{t|ga|taifead}}
+* Italian: {{t+|it|registrare}}
+* Japanese: {{t+|ja|記す|tr=shirusu}}, {{t+|ja|記録|tr=kiroku suru|alt=記録する}}
+* Korean: {{t+|ko|기록하다}}
+* Lü: {{t|khb|ᦷᦈᧆᦖᦻ}}
+* Macedonian: {{t|mk|запишува}}
+* Malay: {{t|ms|rakam}}
+* Māori: {{t|mi|rekoata}}, {{t|mi|whakapūkete}}
+* Norman: {{t|nrf|enr'gistrer}}
+* Polish: {{t+|pl|notować|impf}}, {{t+|pl|zanotować|pf}}
+* Portuguese: {{t+|pt|registrar}}
+* Romanian: {{t+|ro|înregistra}}
+* Russian: {{t+|ru|запи́сывать|impf}}, {{t+|ru|записа́ть|pf}}
+* Spanish: {{t+|es|registrar}}, {{t+|es|anotar}}
+* Swahili: {{t+|sw|rekodi}}
+* Swedish: {{t+|sv|anteckna}}
+* Turkish: {{t+|tr|kaydetmek}}
+*: Ottoman Turkish: {{t|ota|یازمق|tr=yazmak}}
+* Ukrainian: {{t|uk|запи́сувати|impf}}, {{t|uk|записа́ти|pf}}
+* Welsh: {{t+|cy|cofnodi}}, {{t+|cy|cofnodi}}
+{{trans-bottom}}
+
+{{trans-top|make an audio or video recording of}}
+* Arabic:
+*: Moroccan Arabic: {{t|ary|سجّل|tr=səjjəl}}
+* Azerbaijani: {{t|az|yazdırmaq}}
+* Bulgarian: {{t+|bg|записвам}}
+* Comorian:
+*: Ngazidja Comorian: {{t|zdj|renga|alt=urenga}}
+* Czech: {{t+|cs|nahrát}}
+* Danish: {{t+|da|optage}}, {{t+|da|indspille}}
+* Dutch: {{t+|nl|opnemen}}
+* Finnish: {{t+|fi|tallentaa}}, {{t+|fi|nauhoittaa}}, {{t+|fi|äänittää}}, {{t+|fi|levyttää}}
+* French: {{t+|fr|enregistrer}}
+* Georgian: {{t|ka|იწერს}}, {{t|ka|ჩაიწერს}}
+* German: {{t+|de|aufzeichnen}}, {{t+|de|aufnehmen}}
+* Greek: {{t+|el|εγγράφω}}, {{t+|el|γράφω}}
+* Hungarian: {{t+|hu|felvesz}}, {{t+|hu|rögzít}}
+* Irish: {{t|ga|taifead}}
+* Italian: {{t+|it|registrare}}
+* Japanese: {{t+|ja|録る|tr=toru}}, {{t+|ja|収録|alt=収録する|tr=shūroku suru}}, {{t+|ja|録音|tr=rokuon suru|alt=録音する}} (''audio''), {{t+|ja|録画|alt=録画する|tr=rokuga suru}} (''video'')
+* Macedonian: {{t|mk|снима}}
+* Malay: {{t|ms|rakam}}
+* Māori: {{t|mi|rekoata}}, {{t|mi|hopu}}
+* Norwegian: {{t|no|spille inn}}, {{t|no|ta opp}}
+* Persian: {{t+|fa|ضبط کردن|tr=zabt kardan}}
+* Polish: {{t+|pl|nagrywać|impf}}, {{t+|pl|nagrać|pf}}
+* Portuguese: {{t+|pt|gravar}}
+* Romanian: {{t+|ro|înregistra}}
+* Russian: {{t+|ru|запи́сывать|impf}}, {{t+|ru|записа́ть|pf}}
+* Serbo-Croatian: {{t+|sh|snimiti}}
+* Spanish: {{t+|es|grabar}}, {{t+|es|registrar}}
+* Swahili: {{t+|sw|rekodi}}
+* Swedish: {{t+|sv|spela in}}
+* Walloon: {{t+|wa|eredjistrer}}
+* Welsh: {{t+|cy|recordio}}
+{{trans-bottom}}
+
+{{trans-top|give legal status to by making an official public record}}
+* Armenian: {{t+|hy|գրառել}}, {{t+|hy|գրանցել}}
+* Bulgarian: {{t+|bg|регистрирам}}
+* Danish: {{t|da|bevidne}}, {{t|da|markere}}
+* Finnish: {{t+|fi|rekisteröidä}}
+* Hungarian: {{t+|hu|bejegyez}}, {{t+|hu|nyilvántartásba vesz}}
+* Polish: {{t+|pl|rejestrować|impf}}, {{t+|pl|zarejestrować|pf}}
+{{trans-bottom}}
+
+{{trans-top|(intransitive) make audio or video recording}}
+* Czech: {{t+|cs|nahrávat}}
+* Danish: {{t+|da|indspille}}
+* Dutch: {{t+|nl|opnemen}}
+* Finnish: {{t+|fi|levyttää}}
+* German: {{t+|de|aufzeichnen}}
+* Irish: {{t|ga|taifead}}
+* Polish: {{t|pl|[[nagrywać|nagrywać się]]|impf}}, {{t|pl|[[nagrać|nagrać się]]|pf}}
+* Portuguese: {{t+|pt|gravar}}
+* Romanian: {{t+|ro|înregistra}}
+* Spanish: {{t+|es|grabar}}
+* Swahili: {{t+|sw|rekodi}}
+* Swedish: {{t+|sv|spela in}}
+{{trans-bottom}}
+
+===Anagrams===
+* {{anagrams|en|a=cdeorr|Corder}}
+
+{{cln|en|heteronyms}}
+
+==Catalan==
+
+===Etymology===
+{{ety|ca|:deverbal|recordar}}
+{{deverbal|ca|recordar}}.
+
+===Pronunciation===
+* {{ca-IPA|ò}}
+* {{audio|ca|LL-Q7026 (cat)-Marvives-record.wav|a=Barcelona}}
+* {{rhymes|ca|ɔɾt|s=2}}
+
+===Noun===
+{{ca-noun|m}}
+
+# [[memory]], [[recollection]] of events
+# [[souvenir]]
+# {{lb|ca|in plural}} [[regards]] {{gloss|greeting to pass on to another person}}
+
+====See also====
+* {{l|ca|rècord}}
+
+===Further reading===
+* {{R:DCVB}}
+* {{R:GDLC}}
+* {{R:IEC2}}
+
+==Dutch==
+
+===Etymology 1===
+{{ubor|nl|fr|record}}, from {{der|nl|en|record}}, from {{der|nl|fro|record}}.
+
+====Pronunciation====
+* {{IPA|nl|/rəˈkoːr/}}
+* {{audio|nl|Nl-record.ogg}}
+* {{hyphenation|nl|re|cord}}
+
+====Noun====
+{{nl-noun|n|-s|+}}
+
+# a {{l|en|record}}, a best achievement
+
+=====Derived terms=====
+* {{l|nl|baanrecord}}
+* {{l|nl|recordhouder}}
+* {{l|nl|wereldrecord}}
+
+=====Descendants=====
+* {{desc|id|bor=1|rekor}}
+* {{desc|pap|rekòr|bor=1}}
+
+===Etymology 2===
+Borrowed from {{bor|nl|en|record}}.
+
+====Pronunciation====
+* {{IPA|nl|/ˈrɛ.kɔrt/}}
+* {{hyphenation|nl|re|cord}}
+
+====Noun====
+{{nl-noun|m,n|-s|+}}
+
+# a {{l|en|record}}, something recorded on an [[electronic]] [[storage medium]]
+# a [[data point]] in a [[database]]
+# a [[vinyl]] record
+
+==French==
+
+===Etymology===
+{{bor|fr|en|record}}, itself from {{der|fr|fro|record}}.
+
+===Pronunciation===
+* {{fr-IPA}}
+* {{audio|fr|Fr-record.ogg|text=un record}}
+* {{audio|fr|LL-Q150 (fra)-DenisdeShawi-record.wav|a=<<Canada>> (<<Shawinigan>>)}}
+* {{audio|fr|LL-Q150 (fra)-WikiLucas00-record.wav|a=<<France>> (<<Lyon>>)}}
+
+===Noun===
+{{fr-noun|m}}
+
+# [[#Noun|record]] {{gl|most extreme known value of some achievement}}
+#: {{ux|fr|Le '''record''' du saut en hauteur a été battu par Javier Sotomayor en 1993.|The high jump '''record''' was beaten by Javier Sotomayor in 1993.}}
+
+===Adjective===
+{{fr-adj|inv=1}}
+{{tlb|fr|attributive}}
+
+# {{l|en|record}}, [[record-breaking]], [[record-setting]]
+# [[extreme]]
+#: {{ux|fr|Le Pakistan connaît, depuis la fin d’avril, une vague de chaleur '''record'''.
+|translation=Pakistan has known, since the end of April, a wave of '''record''' heat.}}
+
+===Further reading===
+* {{R:fr:TLFi}}
+
+===Anagrams===
+* {{l|fr|corder}}
+
+==Italian==
+
+===Etymology===
+{{ety|it|:bor|en:record}}
+{{bor+|it|en|record}}.
+
+===Pronunciation===
+{{it-pr|rècord}}
+
+===Noun===
+{{it-noun|m|#}}
+
+# {{l|en|record}} (achievement; computer data element)
+
+===Further reading===
+* {{R:it:Treccani}}
+
+==Portuguese==
+
+===Etymology===
+{{ety|pt|:ubor|en:record|text=+|tree=1}}
+
+===Pronunciation===
+{{pt-IPA|br=récord,récọrd}}
+
+===Noun===
+{{pt-noun|m|#s}}
+
+# {{alternative form of|pt|recorde}}
+
+===Adjective===
+{{pt-adj|inv=1}}
+
+# {{alternative form of|pt|recorde}}
+
+==Romanian==
+
+===Etymology===
+{{ety|ro|:bor|fr:record|text=+|tree=1}}
+
+===Noun===
+{{ro-noun|n|recorduri}}
+
+# {{l|en|record}} {{gl|achievement}}
+
+====Declension====
+{{ro-noun-n-uri}}
+
+==Spanish==
+
+===Noun===
+{{es-noun|m}}
+
+# {{misspelling of|es|récord}}
+# {{l|en|record}}
+
+==Welsh==
+
+===Etymology===
+{{bor+|cy|en|record}}.
+
+===Pronunciation===
+* {{IPA|cy|/ˈrɛkɔrd/}}
+
+===Noun===
+{{cy-noun|f|~iau}}
+
+# {{l|en|record}}
+# {{lb|cy|music}} [[phonograph record]]
+#: {{syn|cy|disg}}
+
+====Derived terms====
+* {{l|cy|record byd||world record}}
+* {{l|cy|recordio||to record}}
+* {{l|cy|recordiad||recording}}
+
+===Further reading===
+* {{R:cy:GPC}}
