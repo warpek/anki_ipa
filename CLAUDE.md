@@ -16,6 +16,7 @@ Free online sources come first, with an optional Claude fallback. The main entry
   - 25.07 has no `aqt.editor_legacy` and no `NewEditor`; `aqt.editor.Editor` is the only editor. 26.08 moved it to `aqt.editor_legacy` and re-exports it from `aqt.editor`.
 - Profile `User 1`. The collection is `~/.local/share/Anki2/User 1/collection.anki2` (schema 18).
 - Add-ons dir: `~/.local/share/Anki2/addons21/`.
+- Git: remote `origin` = `https://github.com/warpek/anki_ipa.git` (public; `gh` logged in as `warpek`). Releases are tagged `vX.Y.Z` and must match `manifest.json` `human_version`.
 - **Never write to the live collection from scripts.**
   - For read-only inspection, use `sqlite3 'file:...?mode=ro&immutable=1'`.
   - Indexes use Anki's custom `unicase` collation. In Python, register it with `create_collation("unicase", ...)`, or join queries will fail.
@@ -159,7 +160,7 @@ scripts/package.sh --dirty          # build anyway (local testing)
   - Optional editor button that handles both the legacy `Editor` and the Svelte `NewEditor` (`isinstance(editor, Editor)`).
   - `config.md` docs, CC BY-SA attribution (Wiktionary / FreeDictionaryAPI.com), `scripts/package.sh`.
 
-**AnkiWeb publication** (full plan: `~/.claude/plans/is-the-plugin-in-polymorphic-orbit.md`). Target is **Anki 25.07+** (`min_point_version` 250700) on Windows, macOS and Linux. The planned repo is `https://github.com/warpek/anki_ipa` (public; not created yet).
+**AnkiWeb publication** (full plan: `~/.claude/plans/is-the-plugin-in-polymorphic-orbit.md`). Target is **Anki 25.07+** (`min_point_version` 250700) on Windows, macOS and Linux. The repo is **`https://github.com/warpek/anki_ipa`** (public, created in Phase 9; `origin`, branch `main`), so the manifest `homepage` and the User-Agent URL are live. Release v0.1.0: https://github.com/warpek/anki_ipa/releases/tag/v0.1.0.
 - [x] **Phase 6, compatibility and HTTP:**
   - Guard the `NewEditor` import, import `Editor` from `aqt.editor`, make `AnyEditor` safe at runtime.
   - `from aqt.qt import sip`.
@@ -174,7 +175,7 @@ scripts/package.sh --dirty          # build anyway (local testing)
   - Cache `save()` never raises; one shared cache/HttpClient for the batch and the editor button.
   - Portable `package.sh` with a git-clean check, shipping `LICENSE.txt` + `NOTICE.txt`.
   - `docs/ankiweb_description.md`, README, `.gitignore` `.playwright-mcp/`.
-- [ ] **Phase 9, release:** commit, create and push the GitHub repo, build, GitHub release. Every outward step needs explicit user confirmation. The user uploads to AnkiWeb manually.
+- [x] **Phase 9, release:** commit, create and push the GitHub repo, build, GitHub release. Every outward step needs explicit user confirmation. **AnkiWeb upload is the user's manual step (not done by Claude).**
 
 ## Verification protocol
 1. `.venv/bin/pytest` is green. Undo in the integration test restores the empty fields.
@@ -345,8 +346,16 @@ scripts/package.sh --dirty          # build anyway (local testing)
   - **Not done:** live `pytest -m network` (no network-relevant change); the "fresh profile without the note type → Settings prompt" check on 26.09 (covered on 25.07/26.08 in Phase 7, same code path). The cache warning is logged twice per failed batch (`resolve_many`'s `finally` and the worker op's `finally`); harmless.
   - **For Phase 9:** commit everything listed by `git status` (incl. untracked `NOTICE.txt`, `docs/`, `src/anki_ipa/{progress_bar,settings_dialog}.py`, `src/anki_ipa/core/settings.py`, `tests/test_{http_transport,robustness,settings}.py`); `anki_ipa.ankiaddon`, `src/anki_ipa/user_files/ipa_cache.json`, `.venv`, `.playwright-mcp/` stay ignored. Then build the release with plain `scripts/package.sh` (no `--dirty`; it refuses until the tree is committed), check `unzip -l anki_ipa.ankiaddon`, attach it to the GitHub release. AnkiWeb form values are in the header comment of `docs/ankiweb_description.md`; after the first upload put the AnkiWeb link/code into README's Install section.
 
+- 2026-10-11 (Phase 9 done, release): pre-commit checks: untracked files were only the Phase 6–8 sources/tests, `NOTICE.txt` and `docs/`; `.gitignore` covers `.venv`, caches, `*.ankiaddon`, `meta.json`, `user_files/*` (except README.txt) and `.playwright-mcp/`; no real keys (`sk-ant…` only as fake test keys), no `gho_`/`ghp_` tokens and no `/home/...` paths anywhere in the full history. 307 offline tests pass, mypy strict clean (36 files).
+  - **Commit** `f9c01d6` "Prepare IPA Filler 0.1.0 for public release" on `main` (author Pawel Warowny).
+  - **Repo** created with `gh repo create warpek/anki_ipa --public --source=. --remote=origin --push`: https://github.com/warpek/anki_ipa (did not exist before).
+  - **Package** from the clean tree with plain `scripts/package.sh`: 28 entries, **58,434 bytes**, sha256 `e2ec4fa4b0f5f5b9d0b55f1016252d009f3b4b831343658ea12113511196c8db`; no top-level folder, no `__pycache__`/`meta.json`/cache; has `manifest.json` (`human_version` 0.1.0), `__init__.py`, `LICENSE.txt`, `NOTICE.txt`, `user_files/README.txt`, `settings_dialog.py`, `progress_bar.py`, `core/settings.py`.
+  - **Release** `v0.1.0` (tag on `f9c01d6`, created by `gh release create --target main`): https://github.com/warpek/anki_ipa/releases/tag/v0.1.0 with `anki_ipa.ankiaddon` attached (58,434 bytes).
+  - **Not done (user's manual steps):** AnkiWeb upload; then add the AnkiWeb link/code to README's Install section.
+
 ## Status / next steps for the user
 1. **Back up first** (*File > Create Backup*, or copy `~/.local/share/Anki2/User 1`). Then restart Anki with the add-on (symlink, or install `anki_ipa.ankiaddon` from `scripts/package.sh`). Since Phase 7 the defaults are empty: pick the note type and fields once in *Tools > Add-ons > IPA Filler > Config* (or accept the prompt). Try *Browser > Notes > Fill missing IPA* on a few selected notes, then on all remaining notes.
 2. Optional: enable Claude in the Settings dialog (or `claude.enabled: true`, plus `ANTHROPIC_API_KEY` or `claude.api_key`) and re-run. Only misses and partial results are sent, for a few cents in total.
 3. Review `tag:ipa::partial` (`[word]` placeholders) and `tag:ipa::llm` (Claude output) in the Browser. Fix entries by hand or with the editor's **IPA** button, then remove the tags.
-4. Release (Phase 9, each outward step needs your confirmation): commit, create/push `github.com/warpek/anki_ipa`, build with `scripts/package.sh` on the committed tree, GitHub release, then upload to AnkiWeb by hand using `docs/ankiweb_description.md`.
+4. Released: GitHub repo https://github.com/warpek/anki_ipa and release v0.1.0 (https://github.com/warpek/anki_ipa/releases/tag/v0.1.0, `anki_ipa.ankiaddon` attached). **Still to do by hand:** upload `anki_ipa.ankiaddon` to AnkiWeb (form values in the header comment of `docs/ankiweb_description.md`), then put the AnkiWeb link/code into README's Install section, commit and push.
+5. Next release: bump `human_version` in `manifest.json` (and the User-Agent version if it is separate), commit, build with plain `scripts/package.sh`, then `gh release create vX.Y.Z anki_ipa.ankiaddon`.
