@@ -5,7 +5,9 @@ from __future__ import annotations
 import http.client
 
 import pytest
-from fakes import client
+from dataclasses import replace
+
+from fakes import ENGLISH_WORDS, client
 
 from anki_ipa.core.batch import (
     SKIP_FILLED,
@@ -13,7 +15,6 @@ from anki_ipa.core.batch import (
     SKIP_NOTE_TYPE,
     Fields,
     build_plan,
-    build_search,
     field_is_empty,
     skip_reason,
     summarize,
@@ -27,7 +28,7 @@ from anki_ipa.core.normalize import NormalizeConfig
 from anki_ipa.core.resolver import Resolver, Result
 from anki_ipa.core.sources.base import Pronunciations
 
-F = Fields()
+F = ENGLISH_WORDS
 
 
 def fields(word: str = "cat", ipa: str = "") -> dict[str, str]:
@@ -41,14 +42,35 @@ def fields(word: str = "cat", ipa: str = "") -> dict[str, str]:
     }
 
 
-def test_fields_from_config_and_search() -> None:
-    cfg = {"note_type": "English words", "tag_partial": "x::p", "overwrite_existing": True}
+def test_fields_from_config() -> None:
+    cfg = {
+        "note_type": " English words ",
+        "word_field": "English",
+        "ipa_field": "IPA-english",
+        "tag_partial": "x::p",
+        "overwrite_existing": True,
+    }
     f = Fields.from_config(cfg)
-    assert (f.word, f.ipa, f.tag_auto, f.tag_partial, f.overwrite) == (
-        "English", "IPA-english", "ipa::auto", "x::p", True
+    assert (f.note_type, f.word, f.ipa, f.tag_auto, f.tag_partial, f.overwrite) == (
+        "English words", "English", "IPA-english", "ipa::auto", "x::p", True
     )
-    assert build_search({}) == '"note:English words" "English:_*" "IPA-english:"'
-    assert build_search(cfg) == '"note:English words" "English:_*"'
+    assert f.is_configured
+
+
+def test_fields_default_to_unconfigured() -> None:
+    for cfg in ({}, {"note_type": "", "word_field": "", "ipa_field": ""},
+                {"note_type": None, "word_field": "English", "ipa_field": "IPA"}):
+        f = Fields.from_config(cfg)
+        assert not f.is_configured
+    f = Fields.from_config({})
+    assert (f.note_type, f.word, f.ipa) == ("", "", "")
+    assert (f.tag_auto, f.tag_llm, f.tag_partial) == ("ipa::auto", "ipa::llm", "ipa::partial")
+    assert not Fields.from_config({"note_type": "N", "word_field": "W", "ipa_field": " "}).is_configured
+
+
+def test_unconfigured_fields_never_select_a_note() -> None:
+    assert skip_reason("English words", fields(), Fields()) == SKIP_NOTE_TYPE
+    assert skip_reason("", {"": "x"}, Fields()) == SKIP_NOTE_TYPE
 
 
 @pytest.mark.parametrize("value", ["", "  ", "&nbsp;", "<br>", "<div></div>", "<div><br></div>"])
@@ -68,7 +90,7 @@ def test_skip_reason() -> None:
     assert skip_reason("English words", {"English": "cat"}, F) == SKIP_NOTE_TYPE
     assert skip_reason("English words", fields(ipa="kæt"), F) == SKIP_FILLED
     assert skip_reason("English words", fields(word="<br>"), F) == SKIP_NO_WORD
-    assert skip_reason("English words", fields(ipa="kæt"), Fields(overwrite=True)) is None
+    assert skip_reason("English words", fields(ipa="kæt"), replace(F, overwrite=True)) is None
 
 
 def test_unique_words_keeps_order() -> None:

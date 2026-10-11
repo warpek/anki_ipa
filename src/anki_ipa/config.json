@@ -1,7 +1,7 @@
 {
-  "note_type": "English words",
-  "word_field": "English",
-  "ipa_field": "IPA-english",
+  "note_type": "",
+  "word_field": "",
+  "ipa_field": "",
   "accent_preference": ["uk", "us"],
   "sources": ["freedictionary", "wiktionary"],
   "claude": {

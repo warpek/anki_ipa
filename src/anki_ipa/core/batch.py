@@ -3,7 +3,9 @@
 The Qt flow in `ui.py` and the collection ops in `ops.py` stay thin; the
 decisions live here so they are unit-testable:
 
-- `build_search(config)`: Browser search for notes that need IPA.
+- `Fields`: note type / field / tag names from config (empty until the
+  user picks them in Settings; the Browser search itself is built in
+  `ops.build_search`, which needs the collection for escaping).
 - `field_is_empty(value)` / `needs_fill(...)`: per-note candidate check
   (used for selected notes and re-checked right before writing).
 - `unique_words(items)`: distinct headwords to resolve (one lookup each).
@@ -25,9 +27,10 @@ from typing import Any
 from .clean import strip_markup
 from .resolver import BUILTIN_SOURCE, Result
 
-DEFAULT_NOTE_TYPE = "English words"
-DEFAULT_WORD_FIELD = "English"
-DEFAULT_IPA_FIELD = "IPA-english"
+# No default note type / fields: the user picks them in the Settings dialog.
+DEFAULT_NOTE_TYPE = ""
+DEFAULT_WORD_FIELD = ""
+DEFAULT_IPA_FIELD = ""
 DEFAULT_TAG_AUTO = "ipa::auto"
 DEFAULT_TAG_LLM = "ipa::llm"
 DEFAULT_TAG_PARTIAL = "ipa::partial"
@@ -49,7 +52,10 @@ Item = tuple[int, str]  # (note id, raw word-field value)
 
 @dataclass(frozen=True)
 class Fields:
-    """The add-on's field / tag names from config, with defaults."""
+    """The add-on's note type / field / tag names from config, with defaults.
+
+    `note_type`, `word` and `ipa` are "" until configured (`is_configured`).
+    """
 
     note_type: str = DEFAULT_NOTE_TYPE
     word: str = DEFAULT_WORD_FIELD
@@ -75,17 +81,11 @@ class Fields:
             overwrite=bool(config.get("overwrite_existing", False)),
         )
 
-    def search(self) -> str:
-        """`"note:<type>" "<word>:_*" "<ipa>:"` (no empty-IPA term when overwriting)."""
-        parts = [f'"note:{self.note_type}"', f'"{self.word}:_*"']
-        if not self.overwrite:
-            parts.append(f'"{self.ipa}:"')
-        return " ".join(parts)
-
-
-def build_search(config: Mapping[str, Any]) -> str:
-    """Browser search for notes that need IPA (see `Fields.search`)."""
-    return Fields.from_config(config).search()
+    @property
+    def is_configured(self) -> bool:
+        """Note type and both fields are set (whether they exist in the
+        collection is checked by `core.settings.setup_problem`)."""
+        return bool(self.note_type and self.word and self.ipa)
 
 
 def field_is_empty(value: str) -> bool:
@@ -102,7 +102,12 @@ SKIP_NO_WORD = "empty headword"
 def skip_reason(
     note_type_name: str, fields: Mapping[str, str], fcfg: Fields
 ) -> str | None:
-    """None if the note should be filled, else the reason to skip it."""
+    """None if the note should be filled, else the reason to skip it.
+
+    Nothing is a candidate while the note type / fields are not configured.
+    """
+    if not fcfg.is_configured:
+        return SKIP_NOTE_TYPE
     if note_type_name != fcfg.note_type or fcfg.word not in fields or fcfg.ipa not in fields:
         return SKIP_NOTE_TYPE
     if field_is_empty(fields[fcfg.word]):
@@ -177,6 +182,7 @@ class Summary:
     words_done: int = 0
     llm_status: str | None = None  # None: no LLM fallback configured
     llm_filled: list[tuple[str, str]] = field(default_factory=list)  # (headword, ipa)
+    cache_error: str | None = None  # lookup cache could not be saved
 
     @property
     def filled(self) -> int:
@@ -194,6 +200,7 @@ def summarize(
     disabled: Mapping[str, str] | None = None,
     errors: Sequence[str] = (),
     llm_status: str | None = None,
+    cache_error: str | None = None,
 ) -> Summary:
     """Counts per note. `written` = nids actually updated by the write op."""
     s = Summary(
@@ -204,6 +211,7 @@ def summarize(
         words_total=words_total,
         words_done=len(results),
         llm_status=llm_status,
+        cache_error=cache_error,
     )
     missed: list[str] = []
     for nid, word in items:
@@ -251,6 +259,11 @@ def summary_text(s: Summary, fcfg: Fields | None = None) -> str:
         lines.append(f"Filled notes are tagged {fcfg.tag_auto}. Edit > Undo reverts the whole batch.")
     if s.llm_status is not None:
         lines.append(f"Claude fallback: {s.llm_status}")
+    if s.cache_error:
+        lines.append(
+            f"Lookup cache not saved ({s.cache_error}); the notes above were written, "
+            "the cache is retried next time."
+        )
     # The LLM fallback's own state is on the line above.
     disabled = {
         k: v for k, v in s.disabled.items() if s.llm_status is None or k not in LLM_SOURCES
@@ -304,12 +317,12 @@ def check_editor_note(
         if note_type_name != fcfg.note_type:
             return EditorCheck(
                 f"IPA: only for notes of type \"{html.escape(fcfg.note_type)}\" "
-                f"(this one is \"{html.escape(note_type_name)}\"; see note_type in the add-on config)."
+                f"(this one is \"{html.escape(note_type_name)}\"; see Tools > Add-ons > IPA Filler > Config)."
             )
         missing = [f for f in (fcfg.word, fcfg.ipa) if f not in fields]
         return EditorCheck(
             f"IPA: the note type has no field {', '.join(html.escape(m) for m in missing)} "
-            "(see word_field / ipa_field in the add-on config)."
+            "(see Tools > Add-ons > IPA Filler > Config)."
         )
     if reason == SKIP_NO_WORD:
         return EditorCheck(f"IPA: the {html.escape(fcfg.word)} field is empty.")

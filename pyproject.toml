@@ -4,6 +4,6 @@ markers = ["network: live requests against real online sources (opt-in: pytest -
 addopts = "-m 'not network'"
 
 [tool.mypy]
-python_version = "3.14"
+python_version = "3.13"
 strict = true
 mypy_path = "src"

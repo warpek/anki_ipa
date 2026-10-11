@@ -5,9 +5,13 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from pathlib import Path
 
+from anki_ipa.core.batch import Fields
 from anki_ipa.core.http import HttpClient, Response
 
 FIXTURES = Path(__file__).parent / "fixtures"
+
+# The developer's deck (the config defaults are empty since Phase 7).
+ENGLISH_WORDS = Fields(note_type="English words", word="English", ipa="IPA-english")
 
 Handler = Callable[[str, str], Response]
 

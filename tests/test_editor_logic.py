@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from fakes import ENGLISH_WORDS
+
 from anki_ipa.core.batch import (
     EditorCheck,
     Fields,
@@ -15,7 +17,7 @@ from anki_ipa.core.cache import Cache
 from anki_ipa.core.resolver import WORD_OVERRIDES, Resolver, Result
 from anki_ipa.core.sources.base import Pronunciations
 
-F = Fields()
+F = ENGLISH_WORDS
 
 
 def fields(word: str = "cat", ipa: str = "") -> dict[str, str]:

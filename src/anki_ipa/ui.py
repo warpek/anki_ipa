@@ -1,29 +1,44 @@
 """Browser action "Fill missing IPA": thin Qt glue around core.batch / ops.
 
-The editor button lives in `editor_button.py` (registered from `register`).
+The editor button lives in `editor_button.py` and the Settings dialog in
+`settings_dialog.py` (both registered from `register`).
 
 Flow (each step's success starts the next):
+0. `ensure_setup`: note type / fields unset or missing in the collection ->
+   offer to open Settings instead (the user then runs the action again).
 1. `QueryOp` (collection): `ops.collect_words` -> candidate (nid, word) items.
-2. `QueryOp.without_collection().with_progress()`: resolve the distinct
-   headwords through `core.resolver` off the main thread; progress label
-   and cancel (Esc / close on the progress window) via the main thread.
+2. `QueryOp.without_collection()`: resolve the distinct headwords through
+   `core.resolver` off the main thread. Progress and Cancel are shown in a bar
+   inside the Browser (`progress_bar.InlineProgress`), not in Anki's modal
+   progress dialog, which tiling compositors float away from the window.
+   Closing the Browser or the profile also cancels.
 3. `CollectionOp`: `ops.apply_plan` writes everything as one undo step.
 4. Summary dialog (`core.batch.summary_text`).
+
+The batch and the editor button share one `Cache` and one `HttpClient` per
+add-on session (`session_resolver`), so they never overwrite each other's
+cache entries and share the per-host throttle.
 """
 
 from __future__ import annotations
 
+import functools
 import os
 import threading
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from aqt import gui_hooks, mw
 from aqt.browser.browser import Browser
 from aqt.operations import CollectionOp, QueryOp
-from aqt.qt import QAction, QMenu, QTimer, QWidget
-from aqt.utils import showText, showWarning, tooltip
+from aqt.qt import QAction, QMenu, QWidget
+from aqt.utils import askUser, showText, showWarning, tooltip
+
+if TYPE_CHECKING:  # aqt.qt re-exports sip, but mypy doesn't see it as exported
+    from PyQt6 import sip
+else:
+    from aqt.qt import sip
 
 from .core.batch import (
     Fields,
@@ -33,16 +48,24 @@ from .core.batch import (
     summary_text,
     unique_words,
 )
-from .core.batch import build_search as build_search
+from .core.cache import Cache
 from .core.clean import strip_markup
-from .core.resolver import Result
+from .core.http import HttpClient, addon_version, make_user_agent
+from .core.resolver import Resolver, Result
 from .core.resolver import build_resolver as build_resolver  # patched by probes
-from .ops import Collected, WriteOutcome, apply_plan, collect_words
+from .core.settings import setup_prompt
+from .ops import Collected, WriteOutcome, apply_plan, collect_words, setup_problem
+from .progress_bar import InlineProgress
 
 ACTION_LABEL = "Fill missing IPA"
+ADDON_TITLE = "IPA Filler"
 CACHE_FILE = "ipa_cache.json"
 
 _addon = ""
+_active: threading.Event | None = None  # cancel flag of the running batch
+# Session-wide, created lazily on the main thread (see `session_resolver`).
+_cache: Cache | None = None
+_http: HttpClient | None = None
 
 
 def register(addon: str) -> None:
@@ -50,10 +73,18 @@ def register(addon: str) -> None:
     _addon = addon
     gui_hooks.browser_menus_did_init.append(_on_browser_menus_did_init)
     gui_hooks.browser_will_show_context_menu.append(_on_browser_context_menu)
+    gui_hooks.profile_will_close.append(_on_profile_will_close)
 
-    from . import editor_button  # imports this module; avoid a cycle at import
+    # Both import this module; import them here to avoid a cycle.
+    from . import editor_button, settings_dialog
 
     editor_button.register()
+    settings_dialog.register(addon)
+
+
+def addon_name() -> str:
+    """The add-on's package name (`anki_ipa`, or a number on AnkiWeb)."""
+    return _addon
 
 
 def get_config() -> dict[str, Any]:
@@ -64,6 +95,59 @@ def get_config() -> dict[str, Any]:
 def cache_path() -> str:
     assert mw is not None
     return os.path.join(mw.addonManager.addonsFolder(_addon), "user_files", CACHE_FILE)
+
+
+@functools.cache
+def user_agent() -> str:
+    """User-Agent with the add-on's `human_version` (read once)."""
+    return make_user_agent(addon_version(os.path.dirname(os.path.abspath(__file__))))
+
+
+def shared_cache() -> Cache:
+    """The session's lookup cache (`user_files/ipa_cache.json`). Main thread."""
+    global _cache
+    if _cache is None:
+        _cache = Cache(cache_path())
+    return _cache
+
+
+def shared_http() -> HttpClient:
+    """The session's HTTP client: one per-host throttle for every lookup."""
+    global _http
+    if _http is None:
+        _http = HttpClient(user_agent=user_agent())
+    return _http
+
+
+def session_resolver(config: dict[str, Any], **kwargs: Any) -> Resolver:
+    """`build_resolver` on the shared cache and client. Call it on the main
+    thread (it may create them); the resolver itself is used by a worker.
+    Goes through the module-global `build_resolver`, which probes patch."""
+    return build_resolver(
+        config,
+        cache_path(),
+        cache=shared_cache(),
+        http=shared_http(),
+        user_agent=user_agent(),
+        **kwargs,
+    )
+
+
+def ensure_setup(parent: QWidget, fcfg: Fields) -> bool:
+    """True when the configured note type and fields exist in the collection.
+
+    Otherwise ask whether to open the Settings dialog (and open it on Yes);
+    the caller stops and the user starts the action again afterwards.
+    """
+    assert mw is not None and mw.col is not None
+    problem = setup_problem(mw.col, fcfg)  # a few backend calls, main thread
+    if problem is None:
+        return True
+    if askUser(setup_prompt(problem), parent=parent, title=ADDON_TITLE):
+        from . import settings_dialog
+
+        settings_dialog.open_settings(parent)
+    return False
 
 
 def _add_action(browser: Browser, menu: QMenu) -> None:
@@ -82,29 +166,67 @@ def _on_browser_context_menu(browser: Browser, menu: QMenu) -> None:
     _add_action(browser, menu)
 
 
+def _on_profile_will_close() -> None:
+    if _active is not None:
+        _active.set()
+    if _cache is not None:
+        _cache.save()  # never raises; a running batch saves again when it stops
+
+
+def _end_run() -> None:
+    global _active
+    _active = None
+
+
+def _parent(browser: Browser) -> QWidget:
+    """The Browser, or the main window once the Browser has been closed."""
+    assert mw is not None
+    if sip.isdeleted(browser) or not browser.isVisible():
+        return mw
+    return browser
+
+
 # -- step 1: collect --------------------------------------------------------
 def _on_fill(browser: Browser) -> None:
+    global _active
     assert mw is not None
+    if _active is not None:
+        tooltip(f"{ACTION_LABEL} is already running (see the bar in the Browser).", parent=browser)
+        return
     config = get_config()  # read on the main thread, passed down
     fcfg = Fields.from_config(config)
+    if not ensure_setup(browser, fcfg):
+        return
+    cancel = _active = threading.Event()
     selected = [int(n) for n in browser.selected_notes()]
+
+    def on_failure(e: Exception) -> None:
+        _end_run()
+        _on_failure(_parent(browser), e)
+
     QueryOp(
         parent=browser,
         op=lambda col: collect_words(col, fcfg, selected or None),
-        success=lambda c: _after_collect(browser, config, fcfg, c, bool(selected)),
-    ).failure(lambda e: _on_failure(browser, e)).run_in_background()
+        success=lambda c: _after_collect(browser, config, fcfg, c, bool(selected), cancel),
+    ).failure(on_failure).run_in_background()
 
 
 def _after_collect(
-    browser: Browser, config: dict[str, Any], fcfg: Fields, c: Collected, had_selection: bool
+    browser: Browser,
+    config: dict[str, Any],
+    fcfg: Fields,
+    c: Collected,
+    had_selection: bool,
+    cancel: threading.Event,
 ) -> None:
     if not c.items:
-        where = "selected notes" if had_selection else f"notes matching {fcfg.search()}"
+        _end_run()
+        where = "selected notes" if had_selection else f"notes matching {c.search}"
         why = ", ".join(f"{n} {r}" for r, n in sorted(c.skipped.items()))
         msg = f"{ACTION_LABEL}: nothing to do in the {where}" + (f" ({why})" if why else "")
-        tooltip(msg, parent=browser)
+        tooltip(msg, parent=_parent(browser))
         return
-    _resolve(browser, config, fcfg, c.items)
+    _resolve(browser, config, fcfg, c.items, cancel)
 
 
 # -- step 2: resolve (network, off the main thread) ---------------------------
@@ -116,45 +238,45 @@ class _Resolved:
     disabled: dict[str, str]
     errors: list[str]
     llm_status: str | None
+    cache_error: str | None = None  # the cache file could not be written
 
 
-def _resolve(browser: Browser, config: dict[str, Any], fcfg: Fields, items: Sequence[Item]) -> None:
+def _resolve(
+    browser: Browser,
+    config: dict[str, Any],
+    fcfg: Fields,
+    items: Sequence[Item],
+    cancel: threading.Event,
+) -> None:
     assert mw is not None
     words = unique_words(items)
-    path = cache_path()
-    cancel = threading.Event()
 
-    # The worker never touches Qt: it reads `cancel`, which the main thread
-    # sets from mw.progress.want_cancel() (polled + on every progress update).
-    def poll_cancel() -> None:
-        assert mw is not None
-        if mw.progress.want_cancel():
-            cancel.set()
-
-    timer = QTimer(mw)
-    timer.timeout.connect(poll_cancel)
-    timer.start(150)
+    # The worker never touches Qt: it reads `cancel`, which the bar's Cancel
+    # button, closing the Browser (the bar is destroyed with it) or closing
+    # the profile set on the main thread.
+    bar = InlineProgress(browser, f"Looking up IPA for {len(words)} headword(s)...", cancel.set)
+    bar.destroyed.connect(lambda *_: cancel.set())
 
     def show_progress(done: int, total: int, word: str) -> None:
-        assert mw is not None
-        poll_cancel()
         label = None
         if word:
             shown = strip_markup(word).strip()
             shown = shown if len(shown) <= 60 else shown[:57] + "..."
             label = f"Looking up IPA {done + 1}/{total}: {shown}"
-        mw.progress.update(label=label, value=done, max=total)
+        bar.update_progress(done, total, label)
 
     def progress(done: int, total: int, word: str) -> None:
         assert mw is not None
         mw.taskman.run_on_main(lambda: show_progress(done, total, word))
 
+    # Built here: it may create the shared cache/client (main thread only).
+    resolver = session_resolver(config, cancel=cancel.is_set, progress=progress)
+
     def op(_col: object) -> _Resolved:
-        resolver = build_resolver(config, path, cancel=cancel.is_set, progress=progress)
         try:
             results = resolver.resolve_many(words)  # saves the cache itself
         finally:
-            resolver.cache.save()  # also on exceptions outside resolve_many
+            resolver.cache.save()  # also on exceptions; never raises OSError
         return _Resolved(
             dict(zip(words, results)),
             len(words),
@@ -162,38 +284,42 @@ def _resolve(browser: Browser, config: dict[str, Any], fcfg: Fields, items: Sequ
             dict(resolver.disabled),
             list(resolver.unexpected_errors),
             resolver.fallback_status(),
+            resolver.cache.last_error,
         )
 
-    def done() -> None:
-        timer.stop()
-        timer.deleteLater()
-
     def on_success(r: _Resolved) -> None:
-        done()
+        assert mw is not None
+        bar.finish()
+        if mw.col is None:  # profile closed meanwhile; nothing to write into
+            _end_run()
+            return
         _write(browser, fcfg, items, r)
 
     def on_failure(e: Exception) -> None:
-        done()
-        _on_failure(browser, e)
+        bar.finish()
+        _end_run()
+        _on_failure(_parent(browser), e)
 
-    # Note: with_progress() makes QueryOp use taskman.with_progress, which
-    # ignores without_collection() (runs with uses_collection=True). Harmless
-    # here: the progress window is modal and the op never touches `col`.
+    # No with_progress(): that would open Anki's floating modal dialog.
     (
         QueryOp(parent=browser, op=op, success=on_success)
         .failure(on_failure)
         .without_collection()
-        .with_progress(f"Looking up IPA for {len(words)} headword(s)...")
         .run_in_background()
     )
-    mw.progress.set_title(f"{ACTION_LABEL} (Esc to cancel)")
 
 
 # -- step 3: write (one undo step) + step 4: summary ---------------------------
 def _write(browser: Browser, fcfg: Fields, items: Sequence[Item], r: _Resolved) -> None:
     plan = build_plan(items, r.results, fcfg)
+    parent = _parent(browser)
+
+    def on_failure(e: Exception) -> None:
+        _end_run()
+        _on_failure(parent, e)
 
     def finish(outcome: WriteOutcome | None) -> None:
+        _end_run()
         written = outcome.written if outcome is not None else []
         s = summarize(
             items,
@@ -205,15 +331,16 @@ def _write(browser: Browser, fcfg: Fields, items: Sequence[Item], r: _Resolved) 
             disabled=r.disabled,
             errors=r.errors,
             llm_status=r.llm_status,
+            cache_error=r.cache_error,
         )
-        _show_summary(browser, summary_text(s, fcfg))
+        _show_summary(parent, summary_text(s, fcfg))
 
     if not plan:
         finish(None)
         return
-    CollectionOp(parent=browser, op=lambda col: apply_plan(col, plan, fcfg)).success(
+    CollectionOp(parent=parent, op=lambda col: apply_plan(col, plan, fcfg)).success(
         finish
-    ).failure(lambda e: _on_failure(browser, e)).run_in_background()
+    ).failure(on_failure).run_in_background()
 
 
 def _show_summary(parent: QWidget, text: str) -> None:

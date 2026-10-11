@@ -10,12 +10,15 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from typing import Any
 
-from anki.collection import Collection, OpChanges
+from anki.collection import Collection, OpChanges, SearchNode
 from anki.errors import NotFoundError
+from anki.models import NotetypeId
 from anki.notes import Note, NoteId
 
 from .core.batch import Fields, Item, Planned, skip_reason
+from .core.settings import setup_problem as _setup_problem
 
 UNDO_NAME = "Fill IPA"
 
@@ -24,6 +27,52 @@ UNDO_NAME = "Fill IPA"
 class Collected:
     items: list[Item] = field(default_factory=list)  # (nid, raw word field)
     skipped: dict[str, int] = field(default_factory=dict)  # reason -> count
+    search: str = ""  # the Browser search used (no selection only)
+
+
+def build_search(col: Collection, fcfg: Fields) -> str:
+    """Browser search for notes that need IPA, escaped by the backend.
+
+    `note:<type>`, `<word>:_*` (word field non-empty) and `<ipa>:` (IPA field
+    empty; left out when overwriting), so `"`, `_`, `*`, `:` and spaces in
+    the names are matched literally. Same `SearchNode` fields in 25.07 and
+    26.08 (`SearchNode.Field` has only `field_name`/`text` in common).
+    """
+    nodes = [SearchNode(note=fcfg.note_type), SearchNode(field_name=fcfg.word)]
+    if not fcfg.overwrite:
+        nodes.append(SearchNode(field=SearchNode.Field(field_name=fcfg.ipa, text="")))
+    return col.build_search_string(*nodes)
+
+
+def _names_and_ids(col: Collection) -> list[tuple[str, NotetypeId]]:
+    entries: list[Any] = list(col.models.all_names_and_ids())  # untyped protobuf
+    return [(str(e.name), NotetypeId(int(e.id))) for e in entries]
+
+
+def note_type_fields(col: Collection, name: str) -> list[str] | None:
+    """Field names of the note type called exactly `name` (None: no such type)."""
+    for nt_name, ntid in _names_and_ids(col):
+        if nt_name == name:
+            nt = col.models.get(ntid)
+            return col.models.field_names(nt) if nt else None
+    return None
+
+
+def note_types_with_fields(col: Collection) -> dict[str, list[str]]:
+    """`{note type name: field names}` for every note type, sorted by name."""
+    out: dict[str, list[str]] = {}
+    for nt_name, ntid in sorted(_names_and_ids(col), key=lambda e: e[0].lower()):
+        nt = col.models.get(ntid)
+        if nt:
+            out[nt_name] = col.models.field_names(nt)
+    return out
+
+
+def setup_problem(col: Collection, fcfg: Fields) -> str | None:
+    """Why the configured note type / fields can't be used here (None = ok)."""
+    if not fcfg.is_configured:
+        return _setup_problem(fcfg, None)
+    return _setup_problem(fcfg, note_type_fields(col, fcfg.note_type))
 
 
 def _type_name(col: Collection, note: Note, cache: dict[int, str]) -> str:
@@ -57,11 +106,12 @@ def collect_words(
     col: Collection, fcfg: Fields, selected: Sequence[int] | None = None
 ) -> Collected:
     """Candidate notes: the selection (filtered) or every `build_search` match."""
+    out = Collected()
     if selected:
         nids: Sequence[int] = selected
     else:
-        nids = col.find_notes(fcfg.search())
-    out = Collected()
+        out.search = build_search(col, fcfg)
+        nids = col.find_notes(out.search)
     type_names: dict[int, str] = {}
     for nid in nids:
         note = col.get_note(NoteId(nid))

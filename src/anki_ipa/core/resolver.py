@@ -34,7 +34,7 @@ from typing import Any
 from .cache import Cache
 from .clean import Headword, clean_headword
 from .compose import FUNCTION_WORDS, compose, join_alternatives, with_punct, words
-from .http import HttpClient, HttpError, RateLimited
+from .http import USER_AGENT, HttpClient, HttpError, Interrupted, RateLimited, cancel_scope
 from .normalize import NormalizeConfig, is_fragment, normalize_ipa
 from .sources.base import ACCENTS, Pronunciations, Source, SourceDisabled
 from .sources.claude import ENV_KEY, ClaudeSource
@@ -157,7 +157,12 @@ class Resolver:
             return None
         self._check_cancel()
         try:
-            pron = source.lookup(query)
+            # Long Retry-After / throttle waits inside the client stop early
+            # when the batch is cancelled.
+            with cancel_scope(self.cancel):
+                pron = source.lookup(query)
+        except Interrupted:
+            raise Cancelled() from None
         except RateLimited as e:
             self.disabled[source.name] = f"rate limited: {e}"
             return None
@@ -168,7 +173,8 @@ class Resolver:
             # Network errors (HttpError) and unexpected source bugs (e.g. a
             # response shape the parser chokes on) are a transient miss for
             # this word only: never cached, never abort the batch. Cancelled
-            # is raised by `_check_cancel` before the lookup, not in it.
+            # is raised by `_check_cancel` before the lookup, or from an
+            # `Interrupted` wait above.
             n = self._errors[source.name] = self._errors.get(source.name, 0) + 1
             if not isinstance(e, HttpError):
                 self.unexpected_errors.append(f"{source.name} {query!r}: {type(e).__name__}: {e}")
@@ -358,6 +364,7 @@ def build_resolver(
     cache: Cache | None = None,
     cancel: CancelCheck | None = None,
     progress: Progress | None = None,
+    user_agent: str = USER_AGENT,
 ) -> Resolver:
     """Resolver from the add-on config dict.
 
@@ -366,9 +373,11 @@ def build_resolver(
     Claude fallback comes from the `claude` dict: `enabled`, `api_key` (empty:
     env `ANTHROPIC_API_KEY`), `model`, `for_partial`. Enabled without any key,
     it is reported as disabled (`NO_KEY_REASON`) and no request is made. The
-    caller resolves `cache_path` (e.g. `<addon dir>/user_files/ipa_cache.json`).
+    caller resolves `cache_path` (e.g. `<addon dir>/user_files/ipa_cache.json`)
+    and the `user_agent` (from the add-on's manifest; ignored when `http` is
+    given).
     """
-    client = http or HttpClient()
+    client = http or HttpClient(user_agent=user_agent)
     names = config.get("sources", ["freedictionary", "wiktionary"])
     sources = [SOURCE_CLASSES[n](client) for n in names if n in SOURCE_CLASSES]
     prefs = config.get("accent_preference", ["uk", "us"])

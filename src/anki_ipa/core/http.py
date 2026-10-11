@@ -1,29 +1,63 @@
-"""Tiny HTTP client on `urllib.request` (stdlib only).
+"""Tiny HTTP client with a pluggable transport.
 
+- Transport: `requests` when importable (Anki bundles it, with certifi's CA
+  bundle, which also works on Windows/macOS builds), else stdlib `urllib`.
+  Certificate verification is never disabled; a failure says so clearly.
 - Descriptive User-Agent, per-request timeout.
 - 404 -> None (the "not found" convention every source relies on).
 - 429/503/529 -> back off (honouring `Retry-After`, capped), retry; after
   `max_retries` raise `RateLimited` so the resolver can skip that source.
-- Per-host minimum interval between requests (polite, one at a time).
+- Per-host minimum interval between requests (polite, one at a time). One
+  client can be shared by several worker threads (the add-on keeps one per
+  session): the throttle reserves each slot under a lock.
+- Waits (throttle, back-off) run in short chunks and stop early, raising
+  `Interrupted`, when the calling thread's `cancel_scope` says so.
 - The network call itself is an injectable `Transport`, so tests never hit
   the network.
 """
 
 from __future__ import annotations
 
+import contextlib
 import email.utils
 import http.client
 import json
+import os
+import ssl
 import threading
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
-USER_AGENT = "anki-ipa-filler/0.1 (Anki add-on; contact: https://github.com/)"
+HOMEPAGE = "https://github.com/warpek/anki_ipa"
+
+
+def make_user_agent(version: str) -> str:
+    return f"anki-ipa-filler/{version} (Anki add-on; +{HOMEPAGE})"
+
+
+# Default for tests / scripts; the add-on passes one built from manifest.json.
+USER_AGENT = make_user_agent("dev")
+
+
+def addon_version(addon_dir: str) -> str:
+    """`human_version` from `<addon_dir>/manifest.json` (else `meta.json`, where
+    Anki copies it on install), or "dev" when neither has a usable one."""
+    for name in ("manifest.json", "meta.json"):
+        try:
+            with open(os.path.join(addon_dir, name), encoding="utf-8") as f:
+                data = json.load(f)
+        except (OSError, ValueError):
+            continue
+        version = data.get("human_version") if isinstance(data, dict) else None
+        if isinstance(version, str) and version.strip():
+            return version.strip()
+    return "dev"
+CERT_HINT = "certificate verification failed — check system certificates / proxy"
 DEFAULT_TIMEOUT = 15.0
 DEFAULT_MIN_INTERVAL = 1.0  # seconds between two requests to the same host
 RETRY_STATUSES = frozenset({429, 503, 529})  # 529 = Anthropic "overloaded"
@@ -57,6 +91,55 @@ class RateLimited(HttpError):
     """The host kept answering 429/503/529 after all retries."""
 
 
+class Interrupted(HttpError):
+    """A wait (throttle or back-off) was cut short by the `cancel_scope`."""
+
+
+_scope = threading.local()
+SLEEP_CHUNK = 0.25  # seconds; how often a long wait checks the cancel hook
+
+
+@contextlib.contextmanager
+def cancel_scope(cancel: Callable[[], bool] | None) -> Iterator[None]:
+    """Make waits of `HttpClient`s in this thread check `cancel` and raise
+    `Interrupted` when it returns True (`None`: plain uninterruptible waits).
+    Thread-local, so one shared client serves a cancellable batch and an
+    uncancellable editor lookup at the same time."""
+    prev = getattr(_scope, "cancel", None)
+    _scope.cancel = cancel
+    try:
+        yield
+    finally:
+        _scope.cancel = prev
+
+
+class CertificateVerifyFailed(OSError):
+    """TLS certificate verification failed (message carries `CERT_HINT`)."""
+
+
+def _is_cert_error(exc: BaseException) -> bool:
+    """True if `exc` is, or wraps, an `ssl.SSLCertVerificationError`.
+
+    urllib wraps it in `URLError.reason`; requests wraps it (via urllib3's
+    `MaxRetryError.reason` / `SSLError.args`) in `requests.exceptions.SSLError`.
+    """
+    seen: set[int] = set()
+    todo: list[object] = [exc]
+    while todo:
+        e = todo.pop()
+        if not isinstance(e, BaseException) or id(e) in seen:
+            continue
+        seen.add(id(e))
+        if isinstance(e, ssl.SSLCertVerificationError):
+            return True
+        todo.extend([getattr(e, "reason", None), e.__cause__, e.__context__, *e.args])
+    return False
+
+
+def _cert_failure(exc: BaseException) -> CertificateVerifyFailed:
+    return CertificateVerifyFailed(f"{CERT_HINT} ({exc})")
+
+
 def urllib_transport(
     method: str, url: str, headers: Mapping[str, str], body: bytes | None, timeout: float
 ) -> Response:
@@ -72,6 +155,43 @@ def urllib_transport(
         except OSError:
             data = b""
         return Response(e.code, hdrs, data)
+    except OSError as e:  # URLError, ssl errors, timeouts
+        if _is_cert_error(e):
+            raise _cert_failure(e) from e
+        raise
+
+
+def requests_transport(
+    method: str, url: str, headers: Mapping[str, str], body: bytes | None, timeout: float
+) -> Response:
+    """Same contract as `urllib_transport`, on `requests` (imported lazily).
+
+    HTTP error statuses are returned, never raised; every
+    `requests.RequestException` becomes an `OSError` (so `HttpClient` reports
+    it as `HttpError(status=0)`), a certificate failure a
+    `CertificateVerifyFailed`.
+    """
+    import requests
+
+    try:
+        r = requests.request(
+            method, url, headers=dict(headers), data=body, timeout=timeout, allow_redirects=True
+        )
+        content = r.content
+    except requests.RequestException as e:
+        if _is_cert_error(e):
+            raise _cert_failure(e) from e
+        raise OSError(f"{type(e).__name__}: {e}") from e
+    return Response(r.status_code, {k.lower(): v for k, v in r.headers.items()}, content)
+
+
+def default_transport() -> Transport:
+    """`requests_transport` if `requests` imports, else `urllib_transport`."""
+    try:
+        import requests  # noqa: F401
+    except ImportError:
+        return urllib_transport
+    return requests_transport
 
 
 def parse_retry_after(value: str | None, now: float | None = None) -> float | None:
@@ -105,7 +225,7 @@ class HttpClient:
         sleep: Callable[[float], None] = time.sleep,
         clock: Callable[[], float] = time.monotonic,
     ) -> None:
-        self.transport: Transport = transport or urllib_transport
+        self.transport: Transport = transport or default_transport()
         self.user_agent = user_agent
         self.timeout = timeout
         self.min_interval = min_interval
@@ -129,8 +249,22 @@ class HttpClient:
             wait = 0.0 if last is None else last + interval - now
             # Reserve the slot before sleeping so concurrent callers queue up.
             self._last[host] = now + max(0.0, wait)
+            self.request_count += 1
         if wait > 0:
-            self._sleep(wait)
+            self._wait(wait, url)
+
+    def _wait(self, delay: float, url: str) -> None:
+        cancel: Callable[[], bool] | None = getattr(_scope, "cancel", None)
+        if cancel is None:
+            self._sleep(delay)
+            return
+        remaining = delay
+        while remaining > 0:
+            if cancel():
+                raise Interrupted(url, 0, "cancelled")
+            step = min(remaining, SLEEP_CHUNK)
+            self._sleep(step)
+            remaining -= step
 
     # -- core -------------------------------------------------------------
     def request(
@@ -145,12 +279,14 @@ class HttpClient:
         hdrs = {"User-Agent": self.user_agent, **(headers or {})}
         attempt = 0
         while True:
-            self._throttle(url)
-            self.request_count += 1
+            self._throttle(url)  # also counts the request
             try:
                 resp = self.transport(method, url, hdrs, body, self.timeout)
+            except CertificateVerifyFailed as e:
+                raise HttpError(url, 0, str(e)) from e
             except (OSError, http.client.HTTPException) as e:
-                # URLError, timeouts, connection resets, IncompleteRead
+                # URLError, timeouts, connection resets, IncompleteRead,
+                # requests.RequestException (mapped to OSError by the transport)
                 raise HttpError(url, 0, f"{type(e).__name__}: {e}") from e
             if resp.status == 404:
                 return None
@@ -166,7 +302,7 @@ class HttpClient:
                     # The server wants us gone for longer than we are willing
                     # to wait: let the caller fall through to another source.
                     raise RateLimited(url, resp.status, f"Retry-After {delay:.0f}s")
-                self._sleep(delay)
+                self._wait(delay, url)
                 attempt += 1
                 continue
             raise HttpError(url, resp.status, resp.text()[:200])

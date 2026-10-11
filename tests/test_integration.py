@@ -12,12 +12,22 @@ from anki.collection import Collection
 from anki.decks import DeckId
 from anki.notes import NoteId
 
-from anki_ipa.core.batch import Fields, build_plan, build_search, unique_words
+from dataclasses import replace
+
+from fakes import ENGLISH_WORDS
+
+from anki_ipa.core.batch import Fields, build_plan, unique_words
 from anki_ipa.core.resolver import Result
-from anki_ipa.ops import UNDO_NAME, apply_plan, collect_words
+from anki_ipa.ops import (
+    UNDO_NAME,
+    apply_plan,
+    build_search,
+    collect_words,
+    note_types_with_fields,
+)
 
 FIELDS = ["English", "Polish", "Not-english", "Not-polish", "English-sound", "IPA-english"]
-F = Fields()
+F = ENGLISH_WORDS
 
 # (English, IPA-english) per note; key = test handle
 NOTES = {
@@ -102,7 +112,7 @@ def snapshot(col: Collection, ids: dict[str, NoteId]) -> dict[str, tuple[list[st
 
 def test_search_finds_exactly_the_empty_ones(col: Collection) -> None:
     ids = setup(col)
-    found = set(col.find_notes(build_search({})))
+    found = set(col.find_notes(build_search(col, F)))
     expected = {ids[k] for k in ("cat", "dog_html", "phrase", "sentence", "missed", "llm")}
     assert found == expected  # not: filled, no_word, &nbsp; ipa, Basic note
     c = collect_words(col, F)
@@ -115,7 +125,7 @@ def test_collect_selected_filters(col: Collection) -> None:
     c = collect_words(col, F, sel)
     assert c.items == [(ids["cat"], "cat"), (ids["nbsp_ipa"], "scope")]
     assert c.skipped == {"IPA already filled": 1, "other note type": 1, "empty headword": 1}
-    c2 = collect_words(col, Fields(overwrite=True), sel)
+    c2 = collect_words(col, replace(F, overwrite=True), sel)
     assert [nid for nid, _ in c2.items] == [ids["cat"], ids["filled"], ids["nbsp_ipa"]]
 
 
@@ -190,7 +200,7 @@ def test_editor_helpers_read_fill_and_overwrite(col: Collection) -> None:
     # Not confirmed (overwrite off): the filled note is left alone.
     assert apply_plan(col, {ids["filled"]: planned}, F).written == []
     # Confirmed: one "Fill IPA" undo step that undo reverts.
-    out = apply_plan(col, {ids["filled"]: planned}, Fields(overwrite=True))
+    out = apply_plan(col, {ids["filled"]: planned}, replace(F, overwrite=True))
     assert out.written == [ids["filled"]]
     n = col.get_note(ids["filled"])
     assert n["IPA-english"] == "ˈrekɔːd, rɪˈkɔːd" and n.tags == ["ipa::auto"]
@@ -207,3 +217,94 @@ def test_editor_helpers_read_fill_and_overwrite(col: Collection) -> None:
     fill_note(new, Planned("kæt", ("ipa::auto", "ipa::partial"), "mixed", True), F)
     assert new["IPA-english"] == "kæt" and sorted(new.tags) == ["ipa::auto", "ipa::partial", "mine"]
     assert new.id == 0
+
+
+# -- search escaping + setup check (SearchNode) ----------------------------------
+ODD_TYPE = 'My "odd" type_1*: x'  # Anki strips the quotes when saving
+ODD_WORD = "Word_*"
+ODD_IPA = "IPA*_x"
+
+
+def setup_odd(col: Collection) -> tuple[Fields, dict[str, NoteId]]:
+    """A note type whose name / fields hold search syntax, plus decoys."""
+    mm = col.models
+    nt = mm.new(ODD_TYPE)
+    for name in ("Front", ODD_WORD, ODD_IPA):
+        mm.add_field(nt, mm.new_field(name))
+    t = mm.new_template("Card 1")
+    t["qfmt"] = "{{Front}}"
+    t["afmt"] = "{{FrontSide}}"
+    mm.add_template(nt, t)
+    mm.add(nt)
+    # Use the names as Anki stored them.
+    name = next(n for n in note_types_with_fields(col) if n.startswith("My ") and "odd" in n)
+    assert '"' not in name and "_1*: x" in name
+    model = mm.by_name(name)
+    assert model is not None
+    assert mm.field_names(model) == ["Front", ODD_WORD, ODD_IPA]
+    fcfg = Fields(note_type=name, word=ODD_WORD, ipa=ODD_IPA)
+    did = DeckId(1)
+    ids: dict[str, NoteId] = {}
+    for key, word, ipa in [
+        ("empty", "cat", ""),
+        ("empty2", "dog house", ""),
+        ("filled", "fish", "fɪʃ"),
+        ("no_word", "", ""),
+        ("star", "*", ""),  # a literal * headword is still a non-empty word
+    ]:
+        n = col.new_note(model)
+        n["Front"] = key
+        n[ODD_WORD] = word
+        n[ODD_IPA] = ipa
+        col.add_note(n, did)
+        ids[key] = n.id
+    # Decoy: a note type that a wildcard reading of the name would also match.
+    decoy = mm.new("My odd type_12345: x")
+    for f in ("Front", "Word_ab", "IPA*_x"):
+        mm.add_field(decoy, mm.new_field(f))
+    t = mm.new_template("Card 1")
+    t["qfmt"] = "{{Front}}"
+    t["afmt"] = "{{FrontSide}}"
+    mm.add_template(decoy, t)
+    mm.add(decoy)
+    dm = mm.by_name("My odd type_12345: x")
+    assert dm is not None
+    n = col.new_note(dm)
+    n["Front"] = "decoy"
+    n["Word_ab"] = "cat"
+    col.add_note(n, did)
+    ids["decoy"] = n.id
+    return fcfg, ids
+
+
+def test_search_escapes_odd_names(col: Collection) -> None:
+    from anki_ipa.ops import setup_problem
+
+    fcfg, ids = setup_odd(col)
+    s = build_search(col, fcfg)
+    assert "\\_" in s and "\\*" in s  # wildcards in the names are escaped
+    assert set(col.find_notes(s)) == {ids["empty"], ids["empty2"], ids["star"]}
+    c = collect_words(col, fcfg)
+    assert c.search == s and c.skipped == {}
+    assert sorted(w for _, w in c.items) == ["*", "cat", "dog house"]
+    # overwrite: the empty-IPA term is dropped
+    s2 = build_search(col, replace(fcfg, overwrite=True))
+    assert set(col.find_notes(s2)) == {ids["empty"], ids["empty2"], ids["star"], ids["filled"]}
+
+    assert setup_problem(col, fcfg) is None
+    assert note_types_with_fields(col)[fcfg.note_type] == ["Front", ODD_WORD, ODD_IPA]
+
+
+def test_setup_problem_against_collection(col: Collection) -> None:
+    from anki_ipa.core.settings import NOT_SET_UP
+    from anki_ipa.ops import note_type_fields, setup_problem
+
+    setup(col)
+    assert setup_problem(col, F) is None
+    assert setup_problem(col, Fields()) == NOT_SET_UP
+    assert note_type_fields(col, "English words") == FIELDS
+    assert note_type_fields(col, "english words") is None  # exact name only
+    missing = setup_problem(col, replace(F, note_type="Vocabulary"))
+    assert missing is not None and "not found" in missing
+    nofield = setup_problem(col, replace(F, ipa="IPA"))
+    assert nofield is not None and '"IPA"' in nofield

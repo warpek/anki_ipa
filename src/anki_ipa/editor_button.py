@@ -3,9 +3,11 @@
 Registered through `gui_hooks.editor_did_init_buttons`, which Anki 26.08
 fires for both editor classes (legacy `Editor` in `setupWeb`, Svelte
 `NewEditor` in `_set_ready`); both have the same `addButton`, whose wrapper
-saves pending edits before calling us.
+saves pending edits before calling us. Before 26.08 (min. supported 25.07)
+`aqt.editor.Editor` is the only editor and `NewEditor` does not exist (None).
 
 Flow (same rules, plan, tags and write op as the Browser batch):
+0. `ui.ensure_setup`: offer the Settings dialog when not set up;
 1. read the note: legacy `editor.note`, or `ops.read_note` by id;
    `check_editor_note` (note type, word field) -> tooltip on a problem;
    a non-empty IPA field asks the user before overwriting;
@@ -24,12 +26,11 @@ Flow (same rules, plan, tags and write op as the Browser batch):
 from __future__ import annotations
 
 from dataclasses import replace
-from typing import Any
+from typing import TYPE_CHECKING, Any, Union
 
 from anki.notes import Note
 from aqt import gui_hooks
-from aqt.editor import NewEditor
-from aqt.editor_legacy import Editor
+from aqt.editor import Editor  # 26.08+: re-exports aqt.editor_legacy.Editor
 from aqt.operations import CollectionOp, QueryOp
 from aqt.utils import askUser, tooltip
 
@@ -46,7 +47,18 @@ from .core.batch import (
 from .core.resolver import Result
 from .ops import NoteSnapshot, WriteOutcome, apply_plan, fill_note, read_note
 
-AnyEditor = Editor | NewEditor
+if TYPE_CHECKING:
+    from aqt.editor import NewEditor
+else:
+    try:  # Svelte editor, Anki 26.08+ only
+        from aqt.editor import NewEditor
+    except ImportError:
+        NewEditor = None
+
+# A string, so the union is never evaluated at runtime (NewEditor may be None).
+# Every NewEditor-only path is reached through `isinstance(editor, Editor)`
+# being False, which on Anki < 26.08 never happens (only Editor exists).
+AnyEditor = Union[Editor, "NewEditor"]
 
 BUTTON_CMD = "anki_ipa_fill"
 BUTTON_LABEL = "IPA"
@@ -81,6 +93,10 @@ def _on_button(editor: AnyEditor) -> None:
     """Called by `addButton`'s wrapper after the editor saved its edits."""
     config = ui.get_config()  # main thread, passed down
     fcfg = Fields.from_config(config)
+    # Not set up / configured note type or fields missing: offer Settings.
+    # (A configured setup and a note of another type: tooltip, see below.)
+    if not ui.ensure_setup(editor.parentWindow, fcfg):
+        return
     if isinstance(editor, Editor):
         note = editor.note
         if note is None:
@@ -141,14 +157,14 @@ def _resolve(
     nid: int | None,
     add_note: Note | None,
 ) -> None:
-    path = ui.cache_path()
+    # Shared cache + client with the Browser batch (created on the main thread).
+    resolver = ui.session_resolver(config)
 
     def op(_col: object) -> Result:
-        resolver = ui.build_resolver(config, path)
         try:
             return resolver.resolve(word)
         finally:
-            resolver.cache.save()
+            resolver.cache.save()  # never raises OSError
 
     (
         QueryOp(

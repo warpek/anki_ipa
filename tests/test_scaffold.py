@@ -16,5 +16,6 @@ def test_manifest_and_config_parse() -> None:
     manifest = json.loads((PKG / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["package"] == "anki_ipa"
     config = json.loads((PKG / "config.json").read_text(encoding="utf-8"))
-    assert config["ipa_field"] == "IPA-english"
+    # No personal defaults: the user picks them in the Settings dialog.
+    assert (config["note_type"], config["word_field"], config["ipa_field"]) == ("", "", "")
     assert config["claude"]["enabled"] is False
