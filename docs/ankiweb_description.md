@@ -19,13 +19,13 @@ Description starts here
 
 ## What it does
 
-- **Browser ▸ Notes ▸ Fill missing IPA** (also in the Browser's right-click menu) fills the selected notes, or, with nothing selected, every note of your chosen note type whose IPA field is empty. A progress bar with a Cancel button stays inside the Browser, and Anki remains usable while it runs.
+- **Browser ▸ Notes ▸ Fill missing IPA** (also in the Browser's right-click menu) fills the selected notes, or, with nothing selected, every note of your chosen note type whose IPA field is empty (also fields holding only `&nbsp;` or `<br>`). A progress bar with a Cancel button stays inside the Browser, and Anki remains usable while it runs.
 - The whole run is **one undo step** (*Edit ▸ Undo "Fill IPA"*), followed by a summary: how many notes were filled from which source, which were partial, and which headwords were not found.
-- An **IPA** button in the editor toolbar fills the note you are editing (Browser, Edit and Add windows). It asks before replacing IPA that is already there.
 - Filled notes are tagged so you can review them in the Browser:
   - `ipa::auto`: filled by this add-on
   - `ipa::partial`: some words could not be found and are written as `[word]`
   - `ipa::llm`: written by Claude (only if you enable it, see below)
+- Words no dictionary has are tagged `ipa::notfound` and skipped in later runs, so they are not looked up again and again. To retry one, remove the tag and run *Fill missing IPA* again; the dictionaries are asked afresh. Network errors are not tagged; those notes are retried next run.
 
 ## Setup
 
@@ -54,7 +54,7 @@ The add-on only contacts these hosts, and only when you run it:
 - `freedictionaryapi.com` (FreeDictionaryAPI.com) and `en.wiktionary.org` (Wiktionary API): it sends the **headword text** from your word field, or single words from it, to look up their pronunciation.
 - `api.anthropic.com`: **only if you enable Claude** with your own key. It then sends the cleaned headword text (word, phrase or sentence) of the notes the free sources missed.
 
-Nothing else from your collection is sent: no other fields, no deck or account data. Requests carry a User-Agent naming the add-on and its version. Results are cached locally in the add-on's `user_files/ipa_cache.json` (kept across updates; delete it to force fresh lookups), and requests are throttled to one per second per site.
+Nothing else from your collection is sent: no other fields, no deck or account data. Requests carry a User-Agent naming the add-on and its version. IPA that was found is cached locally in the add-on's `user_files/ipa_cache.json` (kept across updates), so reruns don't fetch it again, and requests are throttled to one per second per site.
 
 ## Licences and attribution
 

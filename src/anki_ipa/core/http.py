@@ -103,8 +103,8 @@ SLEEP_CHUNK = 0.25  # seconds; how often a long wait checks the cancel hook
 def cancel_scope(cancel: Callable[[], bool] | None) -> Iterator[None]:
     """Make waits of `HttpClient`s in this thread check `cancel` and raise
     `Interrupted` when it returns True (`None`: plain uninterruptible waits).
-    Thread-local, so one shared client serves a cancellable batch and an
-    uncancellable editor lookup at the same time."""
+    Thread-local, so one shared client can serve a cancellable batch and an
+    uncancellable caller at the same time."""
     prev = getattr(_scope, "cancel", None)
     _scope.cancel = cancel
     try:

@@ -108,19 +108,26 @@ def test_cache_roundtrip_and_atomic_save(tmp_path: Path) -> None:
     c2 = Cache(path)
     hit = c2.get("fd", "record")
     assert hit is not None and hit.value == {"uk": ["/x/"]}
-    neg = c2.get("fd", "qwzxv")
-    assert neg is not None and neg.is_negative
+    assert c2.get("fd", "qwzxv") is None  # misses are never stored
+    assert len(c2) == 1
     assert c2.get("wk", "record") is None  # keyed by source too
 
 
-def test_cache_negative_ttl(tmp_path: Path) -> None:
-    now = [1000.0]
-    c = Cache(tmp_path / "c.json", negative_ttl=10, clock=lambda: now[0])
-    c.put("fd", "neg", None)
-    c.put("fd", "pos", {"uk": ["/a/"]})
-    now[0] += 11
-    assert c.get("fd", "neg") is None  # expired negative
-    assert c.get("fd", "pos") is not None  # positives never expire
+def test_cache_ignores_misses_and_drops_legacy_null_entries(tmp_path: Path) -> None:
+    path = tmp_path / "c.json"
+    # v0.1.0 cached misses as null values
+    legacy = {"fd\tneg": [1.0, None], "fd\tpos": [1.0, {"uk": ["/a/"]}], "bad": [1.0]}
+    path.write_text(json.dumps({"version": 1, "entries": legacy}))
+    c = Cache(path, autosave_every=0)
+    assert c.get("fd", "neg") is None and len(c) == 1
+    pos = c.get("fd", "pos")
+    assert pos is not None and pos.value == {"uk": ["/a/"]}  # positives never expire
+    c.put("fd", "miss", None)  # ignored: nothing to save
+    assert len(c) == 1 and c.save()
+    assert "fd\tneg" in json.loads(path.read_text())["entries"]  # not dirty: file unchanged
+    c.put("fd", "new", {"uk": ["/b/"]})
+    c.save()
+    assert set(json.loads(path.read_text())["entries"]) == {"fd\tpos", "fd\tnew"}
 
 
 def test_cache_autosave_and_corrupt_file(tmp_path: Path) -> None:
@@ -128,8 +135,8 @@ def test_cache_autosave_and_corrupt_file(tmp_path: Path) -> None:
     path.write_text("{corrupt")
     c = Cache(path, autosave_every=2)
     assert len(c) == 0
-    c.put("s", "a", None)
-    c.put("s", "b", None)
+    c.put("s", "a", {"uk": ["/a/"]})
+    c.put("s", "b", {"uk": ["/b/"]})
     assert len(json.loads(path.read_text())["entries"]) == 2
 
 

@@ -35,6 +35,8 @@ class Src:
         ipa = self.data.get(text)
         return None if ipa is None else Pronunciations(uk=[ipa], us=[], other=[])
 
+POS = {"uk": ["/x/"]}  # the cache stores found results only
+
 
 def _failing_replace(err: int = errno.EACCES) -> Any:
     calls: list[str] = []
@@ -91,7 +93,7 @@ def test_failed_write_removes_temp_file(tmp_path: Path, monkeypatch: pytest.Monk
 
     monkeypatch.setattr(os, "fdopen", lambda fd, *a, **k: Full(real_fdopen(fd, *a, **k)))
     c = Cache(tmp_path / "ipa_cache.json", autosave_every=0)
-    c.put("fd", "a", None)
+    c.put("fd", "a", POS)
     assert c.save() is False
     assert c.last_error is not None and "No space left" in c.last_error
     assert _tmp_files(tmp_path) == []
@@ -101,7 +103,7 @@ def test_unwritable_directory_does_not_raise(tmp_path: Path) -> None:
     blocker = tmp_path / "user_files"
     blocker.write_text("a file where the folder should be")
     c = Cache(blocker / "ipa_cache.json", autosave_every=0)
-    c.put("fd", "a", None)
+    c.put("fd", "a", POS)
     assert c.save() is False  # mkdir fails with FileExistsError / NotADirectoryError
     assert c.last_error is not None
 
@@ -110,7 +112,7 @@ def test_autosave_failure_never_raises_from_put_and_backs_off(tmp_path: Path) ->
     replace, calls = _failing_replace()
     c = Cache(tmp_path / "ipa_cache.json", autosave_every=2, replace=replace)
     for i in range(7):
-        c.put("fd", f"w{i}", None)  # must not raise
+        c.put("fd", f"w{i}", POS)  # must not raise
     # autosave at 2 changes fails -> next try only after 2 more (4), then 6
     assert len(calls) == 3
     assert len(c) == 7
@@ -127,7 +129,7 @@ def test_stale_own_temp_files_are_removed_on_load(tmp_path: Path) -> None:
     for p in (stale, foreign, unrelated):
         os.utime(p, (old, old))
     (tmp_path / "ipa_cache.json").write_text(
-        json.dumps({"version": 1, "entries": {"fd\ta": [1.0, None]}}), encoding="utf-8"
+        json.dumps({"version": 1, "entries": {"fd\ta": [1.0, POS]}}), encoding="utf-8"
     )
     c = Cache(tmp_path / "ipa_cache.json")
     assert len(c) == 1
@@ -165,21 +167,22 @@ def test_summary_mentions_cache_error() -> None:
 
 
 def test_two_resolvers_sharing_one_cache_keep_both_entries(tmp_path: Path) -> None:
-    """Batch and editor button: each saves, neither drops the other's entries."""
+    """Two runs at once (e.g. a cancelled batch still saving while the next
+    one starts): each saves, neither drops the other's entries."""
     path = tmp_path / "ipa_cache.json"
     shared = Cache(path, autosave_every=1)
     data = {f"w{i}": f"/w{i}/" for i in range(40)}
     batch = Resolver([Src("a", data)], shared, NormalizeConfig())
-    editor = Resolver([Src("a", data)], shared, NormalizeConfig())
+    other = Resolver([Src("a", data)], shared, NormalizeConfig())
     words_a = [f"w{i}" for i in range(0, 40, 2)]
     words_b = [f"w{i}" for i in range(1, 40, 2)]
 
-    def run_editor() -> None:
+    def run_other() -> None:
         for w in words_b:
-            editor.resolve(w)
-            editor.cache.save()
+            other.resolve(w)
+            other.cache.save()
 
-    t = threading.Thread(target=run_editor)
+    t = threading.Thread(target=run_other)
     t.start()
     batch.resolve_many(words_a)
     t.join()
@@ -193,8 +196,8 @@ def test_separate_caches_would_lose_entries(tmp_path: Path) -> None:
     """Why the add-on shares one instance: the last snapshot wins."""
     path = tmp_path / "ipa_cache.json"
     c1, c2 = Cache(path, autosave_every=0), Cache(path, autosave_every=0)
-    c1.put("a", "x", None)
-    c2.put("a", "y", None)
+    c1.put("a", "x", POS)
+    c2.put("a", "y", POS)
     c1.save()
     c2.save()
     assert len(Cache(path)) == 1

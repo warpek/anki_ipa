@@ -127,7 +127,8 @@ def test_word_by_word_with_placeholders() -> None:
 
 def test_word_by_word_disabled() -> None:
     r = resolver(FakeSource("a", WORDS), word_by_word=False).resolve("clock in")
-    assert r == Result(None, None, False, ["clock", "in"])
+    # the user turned word-by-word off: a whole-phrase miss is definitive
+    assert r == Result(None, None, False, ["clock", "in"], definitive=True)
 
 
 def test_all_words_missing_gives_none() -> None:
@@ -193,16 +194,16 @@ def test_cache_hit_avoids_second_call(tmp_path: Path) -> None:
     assert src2.calls == []
 
 
-def test_negative_cache_ttl() -> None:
-    now = [0.0]
+def test_miss_asked_once_per_resolver_and_again_by_the_next() -> None:
+    shared = Cache(None)
     src = FakeSource("a", {})
-    r = Resolver([src], Cache(None, negative_ttl=100, clock=lambda: now[0]), NormalizeConfig())
+    r = Resolver([src], shared, NormalizeConfig())
     r.resolve("qwzxv")
     r.resolve("qwzxv")
-    assert src.calls == ["qwzxv"]
-    now[0] = 101
-    r.resolve("qwzxv")
-    assert src.calls == ["qwzxv", "qwzxv"]
+    assert src.calls == ["qwzxv"]  # per-run memo
+    assert len(shared) == 0  # misses are not cached
+    Resolver([src], shared, NormalizeConfig()).resolve("qwzxv")
+    assert src.calls == ["qwzxv", "qwzxv"]  # a new run asks again
 
 
 def test_rate_limited_falls_through_and_disables() -> None:

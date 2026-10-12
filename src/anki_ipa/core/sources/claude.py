@@ -27,8 +27,9 @@ Raw HTTP on the shared `HttpClient` (stdlib urllib, no SDK), Messages API:
   `HttpError` (transient miss).
 
 `lookup` returns the validated raw reply as `Pronunciations(uk=[reply])` so
-the resolver caches it like any other source (key `claude`, negative results
-included). The resolver normalises it with the usual pipeline.
+the resolver caches it like any other source (key `claude`; a miss or a
+rejected reply is not cached, only remembered for the run). The resolver
+normalises it with the usual pipeline.
 """
 
 from __future__ import annotations

@@ -1,7 +1,7 @@
 """Browser action "Fill missing IPA": thin Qt glue around core.batch / ops.
 
-The editor button lives in `editor_button.py` and the Settings dialog in
-`settings_dialog.py` (both registered from `register`).
+The Settings dialog lives in `settings_dialog.py` (registered from
+`register`).
 
 Flow (each step's success starts the next):
 0. `ensure_setup`: note type / fields unset or missing in the collection ->
@@ -12,12 +12,16 @@ Flow (each step's success starts the next):
    inside the Browser (`progress_bar.InlineProgress`), not in Anki's modal
    progress dialog, which tiling compositors float away from the window.
    Closing the Browser or the profile also cancels.
-3. `CollectionOp`: `ops.apply_plan` writes everything as one undo step.
+3. `CollectionOp`: `ops.apply_plan` writes everything as one undo step:
+   the IPA fills and the not-found tag on definitive misses (notes already
+   tagged are excluded by the search / skipped in a selection, and counted).
 4. Summary dialog (`core.batch.summary_text`).
 
-The batch and the editor button share one `Cache` and one `HttpClient` per
-add-on session (`session_resolver`), so they never overwrite each other's
-cache entries and share the per-host throttle.
+All batches of an add-on session share one `Cache` (found results only)
+and one `HttpClient` (`session_resolver`), so they never overwrite each
+other's cache entries and share the per-host throttle. Each run gets a new
+`Resolver`, so its memo of misses lasts for that run only: a note whose
+`ipa::notfound` tag was removed is looked up afresh next time.
 """
 
 from __future__ import annotations
@@ -41,6 +45,7 @@ else:
     from aqt.qt import sip
 
 from .core.batch import (
+    SKIP_NOT_FOUND,
     Fields,
     Item,
     build_plan,
@@ -75,10 +80,9 @@ def register(addon: str) -> None:
     gui_hooks.browser_will_show_context_menu.append(_on_browser_context_menu)
     gui_hooks.profile_will_close.append(_on_profile_will_close)
 
-    # Both import this module; import them here to avoid a cycle.
-    from . import editor_button, settings_dialog
+    # It imports this module; import it here to avoid a cycle.
+    from . import settings_dialog
 
-    editor_button.register()
     settings_dialog.register(addon)
 
 
@@ -120,9 +124,10 @@ def shared_http() -> HttpClient:
 
 
 def session_resolver(config: dict[str, Any], **kwargs: Any) -> Resolver:
-    """`build_resolver` on the shared cache and client. Call it on the main
-    thread (it may create them); the resolver itself is used by a worker.
-    Goes through the module-global `build_resolver`, which probes patch."""
+    """A new `build_resolver` on the shared cache and client, one per run (its
+    miss memo must not outlive the run). Call it on the main thread (it may
+    create them); the resolver itself is used by a worker. Goes through the
+    module-global `build_resolver`, which probes patch."""
     return build_resolver(
         config,
         cache_path(),
@@ -221,12 +226,10 @@ def _after_collect(
 ) -> None:
     if not c.items:
         _end_run()
-        where = "selected notes" if had_selection else f"notes matching {c.search}"
-        why = ", ".join(f"{n} {r}" for r, n in sorted(c.skipped.items()))
-        msg = f"{ACTION_LABEL}: nothing to do in the {where}" + (f" ({why})" if why else "")
+        msg = c.nothing_to_do_html(fcfg, ACTION_LABEL, had_selection)
         tooltip(msg, parent=_parent(browser))
         return
-    _resolve(browser, config, fcfg, c.items, cancel)
+    _resolve(browser, config, fcfg, c.items, c.skipped.get(SKIP_NOT_FOUND, 0), cancel)
 
 
 # -- step 2: resolve (network, off the main thread) ---------------------------
@@ -246,6 +249,7 @@ def _resolve(
     config: dict[str, Any],
     fcfg: Fields,
     items: Sequence[Item],
+    skipped_not_found: int,
     cancel: threading.Event,
 ) -> None:
     assert mw is not None
@@ -293,7 +297,7 @@ def _resolve(
         if mw.col is None:  # profile closed meanwhile; nothing to write into
             _end_run()
             return
-        _write(browser, fcfg, items, r)
+        _write(browser, fcfg, items, r, skipped_not_found)
 
     def on_failure(e: Exception) -> None:
         bar.finish()
@@ -310,7 +314,14 @@ def _resolve(
 
 
 # -- step 3: write (one undo step) + step 4: summary ---------------------------
-def _write(browser: Browser, fcfg: Fields, items: Sequence[Item], r: _Resolved) -> None:
+def _write(
+    browser: Browser,
+    fcfg: Fields,
+    items: Sequence[Item],
+    r: _Resolved,
+    skipped_not_found: int = 0,
+) -> None:
+    # Fills plus not-found tags for definitive misses: one CollectionOp.
     plan = build_plan(items, r.results, fcfg)
     parent = _parent(browser)
 
@@ -332,6 +343,7 @@ def _write(browser: Browser, fcfg: Fields, items: Sequence[Item], r: _Resolved) 
             errors=r.errors,
             llm_status=r.llm_status,
             cache_error=r.cache_error,
+            skipped_not_found=skipped_not_found,
         )
         _show_summary(parent, summary_text(s, fcfg))
 

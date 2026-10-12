@@ -1,7 +1,11 @@
 """JSON file cache of source lookups, keyed by (source, query).
 
-Positive results never expire; negative results (value None) expire after
-`negative_ttl` seconds so words added to a dictionary later get retried.
+Only *found* results are stored, and they never expire. Misses ("not
+found") are never cached: whether a note is looked up again is decided by
+the note's `ipa::notfound` tag alone, so removing the tag always gives a
+fresh lookup (the resolver remembers misses only for one run). `put(...,
+None)` is ignored, and `null` entries in files written by v0.1.0 (which
+cached misses) are dropped on load; the file loses them on the next save.
 Writes are atomic (temp file + `os.replace`). The caller resolves the path
 (normally `<addon>/user_files/ipa_cache.json`, which survives upgrades).
 
@@ -33,7 +37,6 @@ from typing import Any
 
 log = logging.getLogger(__name__)
 
-NEGATIVE_TTL = 30 * 24 * 3600.0
 STALE_TMP_AGE = 3600.0  # seconds; younger temp files may belong to a live writer
 _VERSION = 1
 _SEP = "\t"
@@ -41,12 +44,8 @@ _SEP = "\t"
 
 @dataclass(frozen=True)
 class CacheEntry:
-    value: Any  # JSON value; None = negative result
+    value: Any  # JSON value (never None)
     timestamp: float
-
-    @property
-    def is_negative(self) -> bool:
-        return self.value is None
 
 
 class Cache:
@@ -54,7 +53,6 @@ class Cache:
         self,
         path: str | os.PathLike[str] | None,
         *,
-        negative_ttl: float = NEGATIVE_TTL,
         autosave_every: int = 25,
         clock: Callable[[], float] = time.time,
         replace: Callable[[str, Path], None] = os.replace,
@@ -64,7 +62,6 @@ class Cache:
         `replace` is the atomic rename (a seam for tests).
         """
         self.path = Path(path) if path is not None else None
-        self.negative_ttl = negative_ttl
         self.autosave_every = autosave_every
         self._clock = clock
         self._lock = threading.RLock()
@@ -112,23 +109,25 @@ class Cache:
             raw = json.loads(self.path.read_text(encoding="utf-8"))
             entries = raw.get("entries", {}) if isinstance(raw, dict) else {}
             self._data = {
-                k: v for k, v in entries.items() if isinstance(v, list) and len(v) == 2
+                k: v
+                for k, v in entries.items()
+                if isinstance(v, list) and len(v) == 2 and v[1] is not None
             }
         except (OSError, ValueError):
             self._data = {}  # unreadable cache: start fresh, overwrite on save
 
     def get(self, source: str, query: str) -> CacheEntry | None:
-        """The entry, or None if absent or an expired negative result."""
+        """The stored (found) result, or None if absent."""
         with self._lock:
             item = self._data.get(self._key(source, query))
         if item is None:
             return None
-        ts, value = float(item[0]), item[1]
-        if value is None and self._clock() - ts > self.negative_ttl:
-            return None
-        return CacheEntry(value, ts)
+        return CacheEntry(item[1], float(item[0]))
 
     def put(self, source: str, query: str, value: Any) -> None:
+        """Store a found result; `None` (a miss) is ignored, never cached."""
+        if value is None:
+            return
         with self._lock:
             self._data[self._key(source, query)] = [self._clock(), value]
             self._dirty += 1

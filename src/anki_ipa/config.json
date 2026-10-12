@@ -21,5 +21,6 @@
   "tag_auto": "ipa::auto",
   "tag_llm": "ipa::llm",
   "tag_partial": "ipa::partial",
+  "tag_not_found": "ipa::notfound",
   "overwrite_existing": false
 }

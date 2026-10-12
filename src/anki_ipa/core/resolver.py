@@ -16,11 +16,27 @@ Per alternative of the cleaned headword:
    `complete=True`). Its reply is normalised like any source result (weak
    forms are left to the model), cached under the source name.
 
-Every source lookup is cached (negative results too). A source raising
+Found results are cached in the shared `Cache` (across runs). Misses are
+NOT: a clean "not found" answer goes into the per-resolver memo `_misses`
+(source, query), so one run (one batch; the add-on builds a new resolver per
+run) never asks a source twice for the same query, while the next run asks
+again. Whether a note is retried is decided by its `ipa::notfound` tag only.
+A source result with no usable (non-fragment) form counts as a miss too. A
+source raising
 `RateLimited` is disabled for the rest of the run; other `HttpError`s are a
 transient miss (not cached), and `max_errors` consecutive ones disable the
 source as well (e.g. offline). `SourceDisabled` (e.g. Claude 401) disables it
 immediately.
+
+`Result.definitive` (Phase 10a) marks a *genuine* miss: no IPA, and every
+lookup made for that headword got a real "not found" answer in this run
+(a query already in `_misses` counts as one, even if its source has been
+disabled since). Any transient error, unexpected exception, or a source
+that was disabled before or during a lookup it would have answered (rate
+limit, `max_errors`, `SourceDisabled`, Claude enabled without a key) makes
+the miss non-definitive. A rejected Claude reply is a clean "not found"
+(definitive, memoised, not cached). Cancellation raises `Cancelled`, so a
+cancelled headword has no `Result` at all.
 """
 
 from __future__ import annotations
@@ -28,7 +44,7 @@ from __future__ import annotations
 import os
 import re
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 from .cache import Cache
@@ -77,6 +93,11 @@ def _skeleton(ipa: str) -> str:
     return _SKELETON_DROP.sub("", ipa)
 
 
+def _usable(pron: Pronunciations) -> bool:
+    """True if some form is not a fragment (`-ɪŋ`, `ɹə-`): worth caching."""
+    return any(not is_fragment(raw) for raw in (*pron.uk, *pron.us, *pron.other))
+
+
 def _agree(phonemic: Sequence[str], narrow: Sequence[str]) -> bool:
     """True if some phonemic form matches some narrow form (by skeleton)."""
     keys = {_skeleton(n) for n in narrow}
@@ -93,6 +114,10 @@ class Result:
     source: str | None  # first contributing source name, or "mixed"
     complete: bool
     missing: list[str] = field(default_factory=list)  # unresolved words
+    # ipa is None and every source that should have been asked (free chain,
+    # Claude fallback when configured) answered "not found" in this run, with
+    # no error / disabled source on the way. See module doc.
+    definitive: bool = False
 
 
 @dataclass
@@ -121,6 +146,9 @@ class Resolver:
         overrides: Mapping[str, str] | None = None,
     ) -> None:
         self.sources = list(sources)
+        # (source, query) that answered "not found" during this resolver's
+        # life (one run). Never persisted: the next run asks again.
+        self._misses: set[tuple[str, str]] = set()
         self.overrides = {
             k.lower(): v for k, v in (WORD_OVERRIDES if overrides is None else overrides).items()
         }
@@ -143,6 +171,9 @@ class Resolver:
         self.disabled: dict[str, str] = {}  # source name -> reason
         self.unexpected_errors: list[str] = []  # non-HTTP exceptions from sources
         self._errors: dict[str, int] = {}
+        # Set while resolving one headword when some lookup could not give a
+        # real answer (error, disabled source): its miss is not definitive.
+        self._uncertain = False
 
     # -- single source ----------------------------------------------------
     def _check_cancel(self) -> None:
@@ -150,10 +181,16 @@ class Resolver:
             raise Cancelled()
 
     def _source_lookup(self, source: Source, query: str) -> Pronunciations | None:
+        key = (source.name, query)
+        if key in self._misses:
+            return None  # already answered "not found" in this run
         entry = self.cache.get(source.name, query)
         if entry is not None:
-            return None if entry.is_negative else Pronunciations.from_dict(entry.value)
+            cached = Pronunciations.from_dict(entry.value)
+            if _usable(cached):  # (older versions cached fragment-only results)
+                return cached
         if source.name in self.disabled:
+            self._uncertain = True
             return None
         self._check_cancel()
         try:
@@ -164,9 +201,11 @@ class Resolver:
         except Interrupted:
             raise Cancelled() from None
         except RateLimited as e:
+            self._uncertain = True
             self.disabled[source.name] = f"rate limited: {e}"
             return None
         except SourceDisabled as e:
+            self._uncertain = True
             self.disabled[source.name] = str(e)
             return None
         except Exception as e:
@@ -175,6 +214,7 @@ class Resolver:
             # this word only: never cached, never abort the batch. Cancelled
             # is raised by `_check_cancel` before the lookup, or from an
             # `Interrupted` wait above.
+            self._uncertain = True
             n = self._errors[source.name] = self._errors.get(source.name, 0) + 1
             if not isinstance(e, HttpError):
                 self.unexpected_errors.append(f"{source.name} {query!r}: {type(e).__name__}: {e}")
@@ -182,7 +222,10 @@ class Resolver:
                 self.disabled[source.name] = f"{n} consecutive errors, last: {e}"
             return None
         self._errors[source.name] = 0
-        self.cache.put(source.name, query, None if pron is None else pron.to_dict())
+        if pron is None or not _usable(pron):
+            self._misses.add(key)  # this run only; misses are never cached
+            return None
+        self.cache.put(source.name, query, pron.to_dict())
         return pron
 
     def _variants(self, pron: Pronunciations) -> list[str]:
@@ -285,6 +328,7 @@ class Resolver:
         hw: Headword = clean_headword(raw_field_value)
         if hw.is_empty:
             return Result(None, None, False, [])
+        self._uncertain = False
         ipas: list[str] = []
         sources: list[str] = []
         missing: list[str] = []
@@ -302,13 +346,20 @@ class Resolver:
         source = None if not distinct else distinct[0] if len(distinct) == 1 else "mixed"
         result = Result(joined, source, joined is not None and all_resolved and not missing, missing)
         if not result.complete and (result.ipa is None or self.fallback_for_partial):
-            return self._fallback_result(hw) or result
+            result = self._fallback_result(hw) or result
+        if result.ipa is None and not self._uncertain:
+            result = replace(result, definitive=True)
         return result
 
     # -- fallback (Claude) ------------------------------------------------
     def _fallback_result(self, hw: Headword) -> Result | None:
         fb = self.fallback
-        if fb is None or fb.name in self.disabled:
+        if fb is None:
+            if self.fallback_requested is not None:  # configured, but no key
+                self._uncertain = True
+            return None
+        if fb.name in self.disabled:
+            self._uncertain = True
             return None
         query = ", ".join(hw.alternatives) + hw.trailing_punct
         pron = self._source_lookup(fb, query)
@@ -375,7 +426,7 @@ def build_resolver(
     it is reported as disabled (`NO_KEY_REASON`) and no request is made. The
     caller resolves `cache_path` (e.g. `<addon dir>/user_files/ipa_cache.json`)
     and the `user_agent` (from the add-on's manifest; ignored when `http` is
-    given).
+    given). Build a new resolver per run: its miss memo must not outlive it.
     """
     client = http or HttpClient(user_agent=user_agent)
     names = config.get("sources", ["freedictionary", "wiktionary"])

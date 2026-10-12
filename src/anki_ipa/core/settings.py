@@ -8,7 +8,7 @@ helpers (`ops.py`) pass plain names in, so this is unit-testable.
   (unknown keys, and the rest of the `claude` dict, are preserved).
 - `guess_note_type`, `pick_fields`: what the dialog preselects.
 - `validate`: why OK is disabled (None = valid).
-- `setup_problem`: why the Browser action / editor button cannot run yet.
+- `setup_problem`: why the Browser action cannot run yet.
 """
 
 from __future__ import annotations

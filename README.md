@@ -39,13 +39,11 @@ documents every option (sources, style rules, tags, cache, rate limits).
 
 - **Browser > Notes > Fill missing IPA** (also in the right-click menu)
   fills the selected notes, or, with nothing selected, every note of the
-  chosen type whose IPA field is empty. A progress bar with a Cancel button
+  chosen type whose IPA field is empty (a field holding only `&nbsp;` or
+  `<br>` counts as empty). A progress bar with a Cancel button
   stays inside the Browser, and Anki remains usable meanwhile. The whole run
   is **one undo step** (*Edit > Undo "Fill IPA"*). A summary lists the
   sources used, partial results and the headwords that were not found.
-- The **IPA** button in the editor toolbar fills the note you are editing. It
-  asks before it replaces existing IPA. (The experimental Svelte editor
-  supports it in the Browser and Edit windows, not in its Add window.)
 - Filled notes are tagged:
   - `ipa::auto`: filled by the add-on;
   - `ipa::partial`: some words could only be written as `[word]`;
@@ -53,6 +51,15 @@ documents every option (sources, style rules, tags, cache, rate limits).
 
   Review them with the Browser searches `tag:ipa::partial` and
   `tag:ipa::llm`, then remove the tags (*Notes > Remove Tags*).
+- Notes for which no source has any IPA are tagged `ipa::notfound`, and
+  later runs skip them (the summary, or the "nothing to do" tooltip, says
+  how many). Misses caused by a network error, a rate limit or a source that
+  was turned off are not tagged, so the next run tries them again. To retry
+  a tagged note, remove the tag (search `tag:ipa::notfound`, then *Notes >
+  Remove Tags*) and run *Fill missing IPA* again. The tag is the only thing
+  that makes the add-on skip a note: misses are never cached, so the sources
+  are asked afresh. To turn the tag off, set `tag_not_found` to `""` in
+  *Advanced (JSON)*.
 
 ### Output style
 
@@ -76,8 +83,8 @@ entered in the dialog is stored in plain text in the add-on's config.
 
 Only headwords the free sources missed or only partly found are sent, one
 request per headword, to `claude-haiku-5-5`. The cost is billed to your key:
-about $0.07 per 1,000 lookups. Results are cached and tagged `ipa::llm` for
-review.
+about $0.07 per 1,000 lookups. Its answers are cached and tagged `ipa::llm`
+for review.
 
 ## Privacy and network
 
@@ -90,9 +97,11 @@ The add-on contacts these hosts only while it runs a lookup:
 | `api.anthropic.com` | **only** with Claude enabled and your key | the cleaned headword text (word, phrase or sentence) the free sources missed |
 
 No other note fields, deck names or account data are sent. Requests carry a
-User-Agent with the add-on's name, version and homepage. Lookups are cached in
-the add-on folder at `user_files/ipa_cache.json` (*Tools > Add-ons > View
-Files*); it survives updates, and deleting it forces fresh lookups. Each site
+User-Agent with the add-on's name, version and homepage. IPA that was found
+is cached in the add-on folder at `user_files/ipa_cache.json` (*Tools >
+Add-ons > View Files*), so reruns don't fetch it again; it survives updates,
+and deleting it makes found words get fetched again. Misses are not cached
+(the `ipa::notfound` tag handles them). Each site
 gets at most one request per second, and the add-on backs off when a site
 rate-limits.
 
@@ -141,5 +150,4 @@ scripts/package.sh --dirty    # build anyway, for local testing
 
 Layout: `src/anki_ipa/core/` is pure Python (cleaning, normalisation,
 sources, resolver, cache, HTTP) with no Qt imports, so it is unit-testable;
-`ui.py`, `editor_button.py`, `settings_dialog.py` and `progress_bar.py` are
-the Anki/Qt glue, and `ops.py` holds the collection operations.
+`ui.py`, `settings_dialog.py` and `progress_bar.py` are the Anki/Qt glue, and `ops.py` holds the collection operations.

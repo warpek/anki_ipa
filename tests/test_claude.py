@@ -218,15 +218,17 @@ def test_validate_rejects(raw: str, text: str) -> None:
     assert validate_reply(raw, text) is None
 
 
-def test_rejected_reply_is_a_cached_miss() -> None:
+def test_rejected_reply_is_a_definitive_miss_asked_once_per_run() -> None:
     src, api, _ = claude({"insurmountable": "Here is the transcription: ˌɪnsəˈmaʊntəbəl"})
     r = resolver(src)
-    assert r.resolve("insurmountable") == Result(None, None, False, ["insurmountable"])
+    assert r.resolve("insurmountable") == Result(None, None, False, ["insurmountable"], definitive=True)
     assert r.resolve("insurmountable").ipa is None
-    assert len(api.requests) == 1  # negative result cached
-    entry = r.cache.get("claude", "insurmountable")
-    assert entry is not None and entry.is_negative
+    assert len(api.requests) == 1  # remembered for the run
+    assert r.cache.get("claude", "insurmountable") is None  # but not cached
     assert "rejected reply" in src.rejected[0]
+    # the next run (new resolver, same cache) sends it again
+    again = resolver(src, cache=r.cache)
+    assert again.resolve("insurmountable").definitive and len(api.requests) == 2
 
 
 # --- errors ----------------------------------------------------------------------------

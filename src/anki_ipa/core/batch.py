@@ -9,19 +9,19 @@ decisions live here so they are unit-testable:
 - `field_is_empty(value)` / `needs_fill(...)`: per-note candidate check
   (used for selected notes and re-checked right before writing).
 - `unique_words(items)`: distinct headwords to resolve (one lookup each).
-- `build_plan(items, results_by_word, config)`: `{nid: Planned(ipa, tags)}`.
+- `build_plan(items, results_by_word, config)`: `{nid: Planned}`: IPA to
+  write plus tags to add / remove, or a "tag as not found" item.
+- `has_tag` / `without_tags`: Anki-style tag matching (case-insensitive,
+  `tag` or a child `tag::x`), for the not-found tag.
 - `Summary` + `summary_text(...)`: the end-of-run report.
-- `check_editor_note`, `plan_single`, `editor_message`: the editor button
-  (one note, same candidate rules, plan and tags as the batch).
 """
 
 from __future__ import annotations
 
 from collections import Counter
 from collections.abc import Collection as AbstractCollection
-import html
-from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, field, replace
+from collections.abc import Iterable, Mapping, Sequence
+from dataclasses import dataclass, field
 from typing import Any
 
 from .clean import strip_markup
@@ -34,6 +34,11 @@ DEFAULT_IPA_FIELD = ""
 DEFAULT_TAG_AUTO = "ipa::auto"
 DEFAULT_TAG_LLM = "ipa::llm"
 DEFAULT_TAG_PARTIAL = "ipa::partial"
+# Definitive misses get this tag and are skipped in later runs ("" = off).
+DEFAULT_TAG_NOT_FOUND = "ipa::notfound"
+# How to retry a note tagged as not found: misses are never cached, so the
+# next run looks a note up afresh as soon as the tag is gone.
+RETRY_HINT = "remove the tag to retry"
 
 # `Result.source` values that mean a language model produced the IPA (the
 # Claude fallback); such notes get `tag_llm` on top of `tag_auto`.
@@ -64,6 +69,7 @@ class Fields:
     tag_llm: str = DEFAULT_TAG_LLM
     tag_partial: str = DEFAULT_TAG_PARTIAL
     overwrite: bool = False
+    tag_not_found: str = DEFAULT_TAG_NOT_FOUND  # "" = no tagging, no skipping
 
     @classmethod
     def from_config(cls, config: Mapping[str, Any]) -> Fields:
@@ -79,6 +85,7 @@ class Fields:
             tag_llm=s("tag_llm", DEFAULT_TAG_LLM),
             tag_partial=s("tag_partial", DEFAULT_TAG_PARTIAL),
             overwrite=bool(config.get("overwrite_existing", False)),
+            tag_not_found=s("tag_not_found", DEFAULT_TAG_NOT_FOUND),
         )
 
     @property
@@ -93,18 +100,47 @@ def field_is_empty(value: str) -> bool:
     return not strip_markup(value).strip()
 
 
+def tag_matches(tag: str, wanted: str) -> bool:
+    """Anki's `tag:wanted` rule: same tag ignoring case, or a child of it
+    (`wanted::x`). An empty `wanted` matches nothing."""
+    if not wanted:
+        return False
+    t, w = tag.lower(), wanted.lower()
+    return t == w or t.startswith(w + "::")
+
+
+def has_tag(tags: Iterable[str], wanted: str) -> bool:
+    return any(tag_matches(t, wanted) for t in tags)
+
+
+def without_tags(tags: Iterable[str], remove: Iterable[str]) -> list[str]:
+    """`tags` minus every tag matching one of `remove` (children included),
+    order kept. Use it to drop the not-found tag when IPA gets filled."""
+    remove = [r for r in remove if r]
+    return [t for t in tags if not any(tag_matches(t, r) for r in remove)]
+
+
 # Why a note is not a candidate (counted for the "nothing to do" tooltip).
 SKIP_NOTE_TYPE = "other note type"
 SKIP_FILLED = "IPA already filled"
 SKIP_NO_WORD = "empty headword"
+SKIP_NOT_FOUND = "tagged as not found"
 
 
 def skip_reason(
-    note_type_name: str, fields: Mapping[str, str], fcfg: Fields
+    note_type_name: str,
+    fields: Mapping[str, str],
+    fcfg: Fields,
+    *,
+    tags: Iterable[str] = (),
 ) -> str | None:
     """None if the note should be filled, else the reason to skip it.
 
     Nothing is a candidate while the note type / fields are not configured.
+    `tags` are the note's tags: a note carrying `fcfg.tag_not_found` (or a
+    child of it, any case) is skipped with `SKIP_NOT_FOUND`, checked after
+    the other reasons. Callers that don't pass tags never get it
+    (`ops.apply_plan`'s re-check relies on that).
     """
     if not fcfg.is_configured:
         return SKIP_NOTE_TYPE
@@ -114,11 +150,15 @@ def skip_reason(
         return SKIP_NO_WORD
     if not fcfg.overwrite and not field_is_empty(fields[fcfg.ipa]):
         return SKIP_FILLED
+    if has_tag(tags, fcfg.tag_not_found):
+        return SKIP_NOT_FOUND
     return None
 
 
-def needs_fill(note_type_name: str, fields: Mapping[str, str], fcfg: Fields) -> bool:
-    return skip_reason(note_type_name, fields, fcfg) is None
+def needs_fill(
+    note_type_name: str, fields: Mapping[str, str], fcfg: Fields, *, tags: Iterable[str] = ()
+) -> bool:
+    return skip_reason(note_type_name, fields, fcfg, tags=tags) is None
 
 
 def unique_words(items: Sequence[Item]) -> list[str]:
@@ -128,13 +168,29 @@ def unique_words(items: Sequence[Item]) -> list[str]:
 
 @dataclass(frozen=True)
 class Planned:
+    """What to write into one note.
+
+    Fill item (`not_found=False`): set the IPA field to `ipa`, remove
+    `remove_tags` (the not-found tag, children too: `without_tags`), then add
+    `tags`. Not-found item (`not_found=True`, `ipa == ""`, `source == ""`):
+    leave the IPA field alone and only add `tags` (= the not-found tag).
+    """
+
     ipa: str
-    tags: tuple[str, ...]
+    tags: tuple[str, ...]  # to add
     source: str
     partial: bool
+    remove_tags: tuple[str, ...] = ()
+    not_found: bool = False
 
 
 def tags_for(result: Result, fcfg: Fields) -> tuple[str, ...]:
+    """Tags to add for `result`: the fill tags when it has IPA; the not-found
+    tag for a definitive miss (if enabled); nothing for another miss."""
+    if not result.ipa:
+        if result.definitive and fcfg.tag_not_found:
+            return (fcfg.tag_not_found,)
+        return ()
     tags = [fcfg.tag_auto]
     if result.source in LLM_SOURCES:
         tags.append(fcfg.tag_llm)
@@ -146,22 +202,32 @@ def tags_for(result: Result, fcfg: Fields) -> tuple[str, ...]:
 def build_plan(
     items: Sequence[Item], results: Mapping[str, Result], fcfg: Fields
 ) -> dict[int, Planned]:
-    """`{nid: Planned}` for every item whose headword resolved to some IPA.
+    """`{nid: Planned}` for every item whose headword resolved to some IPA,
+    plus a not-found item for every definitive miss (`Result.definitive`)
+    while `fcfg.tag_not_found` is set.
 
     Partial results (`[word]` placeholders, `complete=False`) are written too
-    and get `tag_partial`. Items missing from `results` (cancelled before
-    their turn) or resolved to None are left out.
+    and get `tag_partial` (never the not-found tag). Every fill item removes
+    the not-found tag. Items missing from `results` (cancelled before their
+    turn) and non-definitive misses (errors, disabled sources) are left out.
     """
     plan: dict[int, Planned] = {}
+    remove = (fcfg.tag_not_found,) if fcfg.tag_not_found else ()
     for nid, word in items:
         res = results.get(word)
-        if res is None or not res.ipa:
+        if res is None:
+            continue
+        if not res.ipa:
+            tags = tags_for(res, fcfg)
+            if tags:
+                plan[nid] = Planned(ipa="", tags=tags, source="", partial=False, not_found=True)
             continue
         plan[nid] = Planned(
             ipa=res.ipa,
             tags=tags_for(res, fcfg),
             source=res.source or "unknown",
             partial=not res.complete,
+            remove_tags=remove,
         )
     return plan
 
@@ -183,6 +249,9 @@ class Summary:
     llm_status: str | None = None  # None: no LLM fallback configured
     llm_filled: list[tuple[str, str]] = field(default_factory=list)  # (headword, ipa)
     cache_error: str | None = None  # lookup cache could not be saved
+    tagged_not_found: int = 0  # missed notes that got the not-found tag
+    skipped_not_found: int = 0  # not processed: already tagged as not found
+    missed_uncertain: int = 0  # missed, but not definitively (source error/off): no tag
 
     @property
     def filled(self) -> int:
@@ -201,8 +270,18 @@ def summarize(
     errors: Sequence[str] = (),
     llm_status: str | None = None,
     cache_error: str | None = None,
+    skipped_not_found: int = 0,
 ) -> Summary:
-    """Counts per note. `written` = nids actually updated by the write op."""
+    """Counts per note. `written` = nids actually updated by the write op.
+
+    Every item lands in exactly one of: filled (`filled_by_source`), missed
+    (`missed_notes`; `tagged_not_found` of them got the not-found tag,
+    `missed_uncertain` were not definitive misses: a source failed or was
+    off, so no tag and they are retried next run),
+    `skipped_changed` (a planned fill or tag not written because the note
+    changed meanwhile) or `not_processed` (cancelled). `skipped_not_found`
+    is the collect step's `SKIP_NOT_FOUND` count (those notes are not items).
+    """
     s = Summary(
         total=len(items),
         disabled=dict(disabled or {}),
@@ -212,6 +291,7 @@ def summarize(
         words_done=len(results),
         llm_status=llm_status,
         cache_error=cache_error,
+        skipped_not_found=skipped_not_found,
     )
     missed: list[str] = []
     for nid, word in items:
@@ -219,8 +299,17 @@ def summarize(
             s.not_processed += 1
             continue
         planned = plan.get(nid)
+        if planned is not None and planned.not_found:
+            if nid not in written:
+                s.skipped_changed += 1
+                continue
+            s.tagged_not_found += 1
+            planned = None
         if planned is None:
             s.missed_notes += 1
+            r = results[word]
+            if r.ipa is None and not r.definitive:
+                s.missed_uncertain += 1
             shown = strip_markup(word).strip()
             if shown not in missed:
                 missed.append(shown)
@@ -251,8 +340,20 @@ def summary_text(s: Summary, fcfg: Fields | None = None) -> str:
         lines.append(f"    {SOURCE_LABELS.get(src, src)}: {n}")
     lines.append(f"    of which partial ([word] placeholders, tagged {fcfg.tag_partial}): {s.partial}")
     lines.append(f"Missed: {s.missed_notes}")
+    if s.tagged_not_found:
+        lines.append(
+            f"    of which tagged {fcfg.tag_not_found} (no IPA found, skipped in later runs; "
+            f"{RETRY_HINT}): {s.tagged_not_found}"
+        )
+    if s.missed_uncertain and fcfg.tag_not_found:
+        lines.append(
+            f"    of which not tagged (a source failed or was turned off; tried again next run): "
+            f"{s.missed_uncertain}"
+        )
     if s.not_processed:
         lines.append(f"Not processed (cancelled): {s.not_processed}")
+    if s.skipped_not_found:
+        lines.append(not_found_skip_text(s.skipped_not_found, fcfg))
     if s.skipped_changed:
         lines.append(f"Skipped (IPA filled or note changed meanwhile): {s.skipped_changed}")
     if s.filled:
@@ -293,65 +394,6 @@ def summary_text(s: Summary, fcfg: Fields | None = None) -> str:
     return "\n".join(lines)
 
 
-# -- editor button (one note) --------------------------------------------------
-@dataclass(frozen=True)
-class EditorCheck:
-    """Outcome of `check_editor_note` for the note open in the editor."""
-
-    problem: str | None = None  # tooltip text when the button cannot act
-    word: str = ""  # raw word-field value to resolve
-    current_ipa: str = ""  # cleaned non-empty IPA already there: ask first
-
-    @property
-    def needs_confirm(self) -> bool:
-        return bool(self.current_ipa)
-
-
-def check_editor_note(
-    note_type_name: str, fields: Mapping[str, str], fcfg: Fields
-) -> EditorCheck:
-    """The batch's `skip_reason`, except that a filled IPA field is not a
-    skip but a question for the user (`needs_confirm`)."""
-    reason = skip_reason(note_type_name, fields, replace(fcfg, overwrite=True))
-    if reason == SKIP_NOTE_TYPE:
-        if note_type_name != fcfg.note_type:
-            return EditorCheck(
-                f"IPA: only for notes of type \"{html.escape(fcfg.note_type)}\" "
-                f"(this one is \"{html.escape(note_type_name)}\"; see Tools > Add-ons > IPA Filler > Config)."
-            )
-        missing = [f for f in (fcfg.word, fcfg.ipa) if f not in fields]
-        return EditorCheck(
-            f"IPA: the note type has no field {', '.join(html.escape(m) for m in missing)} "
-            "(see Tools > Add-ons > IPA Filler > Config)."
-        )
-    if reason == SKIP_NO_WORD:
-        return EditorCheck(f"IPA: the {html.escape(fcfg.word)} field is empty.")
-    ipa = fields[fcfg.ipa]
-    current = "" if field_is_empty(ipa) else strip_markup(ipa).strip()
-    return EditorCheck(None, fields[fcfg.word], current)
-
-
-def confirm_overwrite_text(check: EditorCheck, fcfg: Fields) -> str:
-    return (
-        f"The {fcfg.ipa} field already contains:\n\n    {check.current_ipa}\n\n"
-        "Replace it with the looked-up IPA?"
-    )
-
-
-def plan_single(nid: int, word: str, result: Result, fcfg: Fields) -> Planned | None:
-    """`build_plan` for one note: None when nothing usable was found."""
-    return build_plan([(nid, word)], {word: result}, fcfg).get(nid)
-
-
-def editor_message(word: str, planned: Planned | None, fcfg: Fields) -> str:
-    """Tooltip after the editor button ran (HTML-escaped)."""
-    shown = html.escape(strip_markup(word).strip())
-    if planned is None:
-        return f"IPA: nothing found for \u201c{shown}\u201d."
-    label = SOURCE_LABELS.get(planned.source, planned.source)
-    msg = f"IPA: {html.escape(planned.ipa)} ({html.escape(label)})"
-    if planned.partial:
-        msg += f"<br>Partial: [word] = not found; tagged {html.escape(fcfg.tag_partial)}."
-    if planned.source in LLM_SOURCES:
-        msg += f"<br>Written by Claude; tagged {html.escape(fcfg.tag_llm)}, please check."
-    return msg
+def not_found_skip_text(n: int, fcfg: Fields) -> str:
+    """Line / tooltip part for notes skipped because of the not-found tag."""
+    return f"Skipped {n}: tagged {fcfg.tag_not_found} ({RETRY_HINT})"
